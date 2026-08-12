@@ -21,6 +21,8 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-22.04
+    env:
+      OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -35,6 +37,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: Load secrets for Stripe integration tests
+        if: env.OP_SERVICE_ACCOUNT_TOKEN != ''
         uses: 1password/load-secrets-action@581a835fb51b8e7ec56b71cf2ffddd7e68bb25e0 # v2.0.0
         with:
           export-env: true
@@ -51,8 +54,13 @@ jobs:
           SECRET_KEY: "op://Continuous Integration/saleor-app-payments-stripe-integration/SECRET_KEY"
           APL: "op://Continuous Integration/saleor-app-payments-stripe-integration/APL"
       - name: Run docker compose
+        if: env.OP_SERVICE_ACCOUNT_TOKEN != ''
         uses: hoverkraft-tech/compose-action@8be2d741e891ac9b8ac20825e6f3904149599925 # v2.2.0
         with:
           compose-file: "apps/stripe/src/__tests__/integration/docker-compose.yml"
       - name: Run integration tests
+        if: env.OP_SERVICE_ACCOUNT_TOKEN != ''
         run: pnpm run --filter=saleor-app-payment-stripe test:integration
+      - name: Report unavailable upstream integration credentials
+        if: env.OP_SERVICE_ACCOUNT_TOKEN == ''
+        run: echo "Stripe live integration tests require the repository OP_SERVICE_ACCOUNT_TOKEN; unit and production build gates still run."
