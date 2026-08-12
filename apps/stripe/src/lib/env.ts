@@ -37,6 +37,8 @@ export const env = createEnv({
     AWS_ROLE_ARN: z.string().optional(),
     APPSTORE_URL: z.string().optional(),
     APP_NAME: z.string().default("Stripe"),
+    OPIE_INTERNAL_SECRET: z.string().min(32).optional(),
+    OPIE_INTERNAL_PREVIOUS_SECRET: z.string().min(32).optional(),
   },
   shared: {
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
@@ -72,6 +74,8 @@ export const env = createEnv({
     AWS_ROLE_ARN: process.env.AWS_ROLE_ARN,
     APPSTORE_URL: process.env.APPSTORE_URL,
     APP_NAME: process.env.APP_NAME,
+    OPIE_INTERNAL_SECRET: process.env.OPIE_INTERNAL_SECRET,
+    OPIE_INTERNAL_PREVIOUS_SECRET: process.env.OPIE_INTERNAL_PREVIOUS_SECRET,
   },
   isServer: typeof window === "undefined" || process.env.NODE_ENV === "test",
   onValidationError: formatEnvValidationError,

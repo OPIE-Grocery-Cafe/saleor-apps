@@ -7,6 +7,7 @@ export const getMockedTransactionChargeRequestedEvent =
   (): TransactionChargeRequestedEventFragment => ({
     action: {
       amount: 100,
+      currency: "USD",
     },
     transaction: {
       id: mockedSaleorTransactionId,

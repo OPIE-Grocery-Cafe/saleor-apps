@@ -48,7 +48,7 @@ export class StripePaymentIntentsApi implements IStripePaymentIntentsApi {
   }): Promise<Result<Stripe.PaymentIntent, unknown>> {
     return ResultAsync.fromPromise(
       this.stripeApiWrapper.paymentIntents.retrieve(args.id, {
-        expand: ["payment_method"],
+        expand: ["payment_method", "latest_charge"],
       }),
       (error) => error,
     );
@@ -56,9 +56,15 @@ export class StripePaymentIntentsApi implements IStripePaymentIntentsApi {
 
   async capturePaymentIntent(args: {
     id: StripePaymentIntentId;
+    amountToCapture?: number;
   }): Promise<Result<Stripe.PaymentIntent, unknown>> {
     return ResultAsync.fromPromise(
-      this.stripeApiWrapper.paymentIntents.capture(args.id),
+      this.stripeApiWrapper.paymentIntents.capture(
+        args.id,
+        args.amountToCapture === undefined
+          ? undefined
+          : { amount_to_capture: args.amountToCapture },
+      ),
       (error) => error,
     );
   }

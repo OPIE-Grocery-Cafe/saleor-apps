@@ -1,0 +1,17 @@
+fragment StoredPaymentMethodDeleteRequestedEvent on StoredPaymentMethodDeleteRequested {
+  ...EventMetadata
+  user {
+    id
+    email
+  }
+  channel {
+    ...Channel
+  }
+  paymentMethodId
+}
+
+subscription StoredPaymentMethodDeleteRequested {
+  event {
+    ...StoredPaymentMethodDeleteRequestedEvent
+  }
+}

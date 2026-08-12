@@ -13,6 +13,7 @@ export const transactionChargeRequestedFixture = (args: {
   return {
     action: {
       amount: args.amount,
+      currency: "USD",
     },
     transaction: {
       id: mockedSaleorTransactionId,

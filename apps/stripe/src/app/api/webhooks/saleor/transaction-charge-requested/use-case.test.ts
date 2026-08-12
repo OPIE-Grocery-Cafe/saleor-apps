@@ -1,6 +1,6 @@
 import { err, ok } from "neverthrow";
 import type Stripe from "stripe";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { mockedAppConfigRepo } from "@/__tests__/mocks/app-config-repo";
 import { mockedSaleorAppId, mockedSaleorTransactionId } from "@/__tests__/mocks/constants";
@@ -46,6 +46,12 @@ describe("TransactionChargeRequestedUseCase", () => {
     create: () => mockedStripePaymentIntentsApi,
   } satisfies IStripePaymentIntentsApiFactory;
 
+  beforeEach(() => {
+    vi.spyOn(mockedStripePaymentIntentsApi, "getPaymentIntent").mockResolvedValue(
+      ok({ currency: "usd", amount_capturable: 15_000 } as Stripe.PaymentIntent),
+    );
+  });
+
   it("Calls Stripe PaymentIntent API to capture payment intent and returns ChargeSuccess when payment intent is captured successfully", async () => {
     const spy = vi
       .spyOn(mockedStripePaymentIntentsApi, "capturePaymentIntent")
@@ -78,6 +84,7 @@ describe("TransactionChargeRequestedUseCase", () => {
 
     expect(spy).toHaveBeenCalledWith({
       id: mockedStripePaymentIntentId,
+      amountToCapture: 10_000,
     });
   });
 
@@ -105,7 +112,31 @@ describe("TransactionChargeRequestedUseCase", () => {
 
     expect(spy).toHaveBeenCalledWith({
       id: mockedStripePaymentIntentId,
+      amountToCapture: 10_000,
     });
+  });
+
+  it("rejects a charge request above Stripe's capturable amount without calling capture", async () => {
+    vi.spyOn(mockedStripePaymentIntentsApi, "getPaymentIntent").mockResolvedValueOnce(
+      ok({ currency: "usd", amount_capturable: 9_999 } as Stripe.PaymentIntent),
+    );
+    const capture = vi.spyOn(mockedStripePaymentIntentsApi, "capturePaymentIntent");
+    const uc = new TransactionChargeRequestedUseCase({
+      appConfigRepo: mockedAppConfigRepo,
+      stripePaymentIntentsApiFactory,
+    });
+
+    const result = await uc.execute({
+      saleorApiUrl: mockedSaleorApiUrl,
+      appId: mockedSaleorAppId,
+      event: getMockedTransactionChargeRequestedEvent(),
+      problemReporter: mockStripeProblemReporter,
+    });
+
+    expect(result._unsafeUnwrap()).toBeInstanceOf(
+      TransactionChargeRequestedUseCaseResponses.Failure,
+    );
+    expect(capture).not.toHaveBeenCalled();
   });
 
   it("Returns 'MissingConfigErrorResponse' if config not found for specified channel", async () => {

@@ -1,6 +1,6 @@
-import { err } from "neverthrow";
+import { err, ok } from "neverthrow";
 import Stripe from "stripe";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { mockedAppConfigRepo } from "@/__tests__/mocks/app-config-repo";
 import { mockedConfigurationId, mockedSaleorAppId } from "@/__tests__/mocks/constants";
@@ -41,6 +41,12 @@ describe("TransactionChargeRequestedUseCase - problem reporting", () => {
   const stripePaymentIntentsApiFactory = {
     create: () => mockedStripePaymentIntentsApi,
   } satisfies IStripePaymentIntentsApiFactory;
+
+  beforeEach(() => {
+    vi.spyOn(mockedStripePaymentIntentsApi, "getPaymentIntent").mockResolvedValue(
+      ok({ currency: "usd", amount_capturable: 15_000 } as Stripe.PaymentIntent),
+    );
+  });
 
   it("Reports authentication problem when Stripe returns StripeAuthenticationError", async () => {
     vi.spyOn(mockedStripePaymentIntentsApi, "capturePaymentIntent").mockImplementationOnce(

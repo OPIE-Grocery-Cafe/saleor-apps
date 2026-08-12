@@ -24,21 +24,22 @@ describe("parseTransactionInitializeSessionEventData", () => {
     });
   });
 
-  it("should parse valid data with link payment method", () => {
-    const storefrontData = {
-      paymentIntent: {
-        paymentMethod: "link",
-      },
-    };
+  it.each(["apple_pay", "google_pay"])("parses the supported %s wallet", (paymentMethod) => {
+    const result = parseTransactionInitializeSessionEventData({ paymentIntent: { paymentMethod } });
 
-    const result = parseTransactionInitializeSessionEventData(storefrontData);
-
-    expect(result._unsafeUnwrap()).toStrictEqual({
-      paymentIntent: {
-        paymentMethod: "link",
-      },
-    });
+    expect(result._unsafeUnwrap()).toStrictEqual({ paymentIntent: { paymentMethod } });
   });
+
+  it.each(["link", "klarna", "paypal", "us_bank_account", "sepa_debit"])(
+    "rejects the non-launch payment method %s",
+    (paymentMethod) => {
+      const result = parseTransactionInitializeSessionEventData({
+        paymentIntent: { paymentMethod },
+      });
+
+      expect(result._unsafeUnwrapErr()).toBeInstanceOf(UnsupportedPaymentMethodError);
+    },
+  );
 
   it("should return UnsupportedPaymentMethodError if storefront sends unsupported payment method", () => {
     const storefrontData = {

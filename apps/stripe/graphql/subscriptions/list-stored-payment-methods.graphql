@@ -1,0 +1,16 @@
+fragment ListStoredPaymentMethodsEvent on ListStoredPaymentMethods {
+  ...EventMetadata
+  user {
+    id
+    email
+  }
+  channel {
+    ...Channel
+  }
+}
+
+subscription ListStoredPaymentMethods {
+  event {
+    ...ListStoredPaymentMethodsEvent
+  }
+}

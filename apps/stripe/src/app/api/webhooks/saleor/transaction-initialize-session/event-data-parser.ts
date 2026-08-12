@@ -5,23 +5,13 @@ import { BaseError } from "@/lib/errors";
 import { ApplePayPaymentMethod } from "@/modules/stripe/payment-methods/apple-pay";
 import { CardPaymentMethod } from "@/modules/stripe/payment-methods/card";
 import { GooglePayPaymentMethod } from "@/modules/stripe/payment-methods/google-pay";
-import { KlarnaPaymentMethod } from "@/modules/stripe/payment-methods/klarna";
-import { LinkPaymentMethod } from "@/modules/stripe/payment-methods/link";
-import { PayPalPaymentMethod } from "@/modules/stripe/payment-methods/paypal";
-import { SepaDebitPaymentMethod } from "@/modules/stripe/payment-methods/sepa-debit";
-import { USBankAccountPaymentMethod } from "@/modules/stripe/payment-methods/us-bank-account";
 
 const TransactionInitializeEventDataSchema = z
   .object({
     paymentIntent: z.discriminatedUnion("paymentMethod", [
       CardPaymentMethod.TransactionInitializeSchema,
-      KlarnaPaymentMethod.TransactionInitializeSchema,
       GooglePayPaymentMethod.TransactionInitializeSchema,
       ApplePayPaymentMethod.TransactionInitializeSchema,
-      PayPalPaymentMethod.TransactionInitializeSchema,
-      USBankAccountPaymentMethod.TransactionInitializeSchema,
-      SepaDebitPaymentMethod.TransactionInitializeSchema,
-      LinkPaymentMethod.TransactionInitializeSchema,
     ]),
   })
   .strict()

@@ -2,6 +2,7 @@ fragment TransactionChargeRequestedEvent on TransactionChargeRequested {
   ...EventMetadata
   action {
     amount
+    currency
   }
   transaction {
     id
