@@ -12,7 +12,12 @@ type Item = Record<string, unknown>;
 const mode = parseMode(process.argv.slice(2));
 const checksumKey = required("MIGRATION_CHECKSUM_KEY");
 const directUrl = mode === "inventory" ? undefined : required("COMMERCE_DATABASE_DIRECT_URL");
-const secretKey = mode === "inventory" ? undefined : required("SECRET_KEY");
+const secretKeys: Partial<Record<AppName, string>> = mode === "inventory"
+  ? {}
+  : {
+      stripe: requiredAny("STRIPE_SECRET_KEY", "SECRET_KEY"),
+      smtp: requiredAny("SMTP_SECRET_KEY", "SECRET_KEY"),
+    };
 const appIds: Record<AppName, string> = {
   stripe: process.env.STRIPE_APP_ID ?? "saleor.app.payment.stripe",
   smtp: process.env.SMTP_APP_ID ?? "saleor.app.smtp",
@@ -32,7 +37,9 @@ const documentClient = DynamoDBDocumentClient.from(
   }),
 );
 const pool = directUrl ? new pg.Pool({ connectionString: directUrl, max: 2 }) : undefined;
-const encryptor = secretKey ? new Encryptor(secretKey) : undefined;
+const encryptors: Partial<Record<AppName, Encryptor>> = Object.fromEntries(
+  Object.entries(secretKeys).map(([app, key]) => [app, new Encryptor(key)]),
+);
 
 try {
   const scans = new Map<string, Item[]>();
@@ -193,7 +200,8 @@ function assertUnique(items: Item[], key: (item: Item) => string, label: string)
 }
 
 async function migrate(app: AppName, items: Item[]): Promise<void> {
-  if (!pool || !encryptor) throw new Error("PostgreSQL migration dependencies are unavailable");
+  const encryptor = encryptors[app];
+  if (!pool || !encryptor) throw new Error(`PostgreSQL ${app} migration dependencies are unavailable`);
   const aplItems = items.filter((item) => kind(item) === "APL");
   for (const item of aplItems) {
     const auth = aplAuth(item);
@@ -293,7 +301,8 @@ async function exportForRollback(app: AppName, tableName: string): Promise<Item[
 }
 
 async function readPostgresAsDynamo(app: AppName): Promise<Item[]> {
-  if (!pool || !encryptor) throw new Error("PostgreSQL export dependencies are unavailable");
+  const encryptor = encryptors[app];
+  if (!pool || !encryptor) throw new Error(`PostgreSQL ${app} export dependencies are unavailable`);
   const installations = await pool.query<{
     saleor_api_url: string; app_id: string; token_ciphertext: string; jwks: string | null;
     created_at: Date; updated_at: Date;
@@ -366,4 +375,12 @@ function required(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`${name} is required`);
   return value;
+}
+
+function requiredAny(...names: string[]): string {
+  for (const name of names) {
+    const value = process.env[name];
+    if (value) return value;
+  }
+  throw new Error(`${names.join(" or ")} is required`);
 }
