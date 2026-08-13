@@ -27,8 +27,8 @@ jobs:
       HUSKY: 0
       APL: postgres
       PERSISTENCE_BACKEND: postgres
-      COMMERCE_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/opie_commerce
-      COMMERCE_DATABASE_DIRECT_URL: postgresql://postgres:postgres@localhost:5432/opie_commerce
+      COMMERCE_DATABASE_URL: postgresql://stripe_runtime:stripe-runtime-test@localhost:5432/opie_commerce
+      COMMERCE_DATABASE_DIRECT_URL: postgresql://stripe_migrator:stripe-migrator-test@localhost:5432/opie_commerce
       EXPECTED_COMMERCE_SCHEMA_VERSION: 0001_initial.sql
       SECRET_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
       OPIE_INTERNAL_SECRET: 0123456789abcdef0123456789abcdef
@@ -56,10 +56,14 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
-      - name: Provision isolated test schemas
-        run: psql "$COMMERCE_DATABASE_DIRECT_URL" -v ON_ERROR_STOP=1 -c "create schema stripe; create schema smtp;"
-      - run: pnpm --filter saleor-app-payment-stripe migrate:postgres
-      - run: pnpm --filter saleor-app-smtp migrate:postgres
+      - name: Provision isolated migration and runtime roles
+        run: psql postgresql://postgres:postgres@localhost:5432/opie_commerce -f .github/sql/provision-commerce-test.sql
+      - name: Migrate Stripe as stripe_migrator
+        run: pnpm --filter saleor-app-payment-stripe migrate:postgres
+      - name: Migrate SMTP as smtp_migrator
+        env:
+          COMMERCE_DATABASE_DIRECT_URL: postgresql://smtp_migrator:smtp-migrator-test@localhost:5432/opie_commerce
+        run: pnpm --filter saleor-app-smtp migrate:postgres
       - run: pnpm --filter @saleor/postgres-persistence check-types
       - run: pnpm --filter saleor-app-payment-stripe check-types
       - run: pnpm --filter saleor-app-smtp check-types
@@ -68,6 +72,15 @@ jobs:
       - run: pnpm --filter saleor-app-smtp lint
       - run: pnpm --filter @saleor/postgres-persistence exec vitest run --pool=threads --poolOptions.threads.singleThread=true
       - run: pnpm --filter saleor-app-payment-stripe exec vitest run --project=unit --pool=threads --poolOptions.threads.singleThread=true
+      - name: Required PostgreSQL Stripe integration gate
+        run: pnpm --filter saleor-app-payment-stripe test:integration
+      - name: Publish executed Stripe integration count
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: stripe-integration-test-count
+          path: apps/stripe/test-results/stripe-integration-*.txt
+          if-no-files-found: error
       - run: pnpm --filter saleor-app-smtp exec vitest run
       - run: pnpm --filter saleor-app-payment-stripe build
       - run: pnpm --filter saleor-app-smtp build

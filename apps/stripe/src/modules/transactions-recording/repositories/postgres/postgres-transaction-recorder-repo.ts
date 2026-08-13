@@ -27,6 +27,10 @@ type TransactionRow = {
   saleor_schema_minor: number;
 };
 
+type TransactionStatusRow = {
+  last_event_at: Date | null;
+};
+
 export class PostgresTransactionRecorderRepo implements TransactionRecorderRepo {
   private readonly pool: Pool;
 
@@ -128,18 +132,44 @@ export class PostgresTransactionRecorderRepo implements TransactionRecorderRepo 
     access: TransactionRecorderRepoAccess,
     event: { id: StripePaymentIntentId; status: string; eventAt: Date },
   ) {
-    const installationId = await this.requireInstallation(access);
-    const terminal = new Set(["succeeded", "canceled"]);
+    try {
+      const installationId = await this.requireInstallation(access);
+      const terminal = new Set(["succeeded", "canceled"]);
+      const update = await this.pool.query(
+        `UPDATE stripe.recorded_transactions
+            SET stripe_status = $3, last_event_at = $4,
+                terminal_at = CASE WHEN $5 THEN COALESCE(terminal_at, $4) ELSE terminal_at END,
+                updated_at = now()
+          WHERE installation_id = $1 AND payment_intent_id = $2
+            AND (last_event_at IS NULL OR last_event_at <= $4)`,
+        [installationId, event.id, event.status, event.eventAt, terminal.has(event.status)],
+      );
 
-    await this.pool.query(
-      `UPDATE stripe.recorded_transactions
-          SET stripe_status = $3, last_event_at = $4,
-              terminal_at = CASE WHEN $5 THEN COALESCE(terminal_at, $4) ELSE terminal_at END,
-              updated_at = now()
-        WHERE installation_id = $1 AND payment_intent_id = $2
-          AND (last_event_at IS NULL OR last_event_at <= $4)`,
-      [installationId, event.id, event.status, event.eventAt, terminal.has(event.status)],
-    );
+      if (update.rowCount === 1) return ok("updated" as const);
+
+      const existing = await this.pool.query<TransactionStatusRow>(
+        `SELECT last_event_at
+           FROM stripe.recorded_transactions
+          WHERE installation_id = $1 AND payment_intent_id = $2`,
+        [installationId, event.id],
+      );
+
+      if (existing.rowCount === 1) return ok("stale" as const);
+
+      return err(
+        new TransactionRecorderError.TransactionMissingError(
+          "Stripe status arrived without a recorded transaction mapping",
+          { props: { paymentIntentId: event.id } },
+        ),
+      );
+    } catch (error) {
+      return err(
+        new TransactionRecorderError.FailedWritingTransactionError(
+          "Failed to update Stripe transaction status in PostgreSQL",
+          { cause: error },
+        ),
+      );
+    }
   }
 
   private identical(row: TransactionRow, transaction: RecordedTransaction) {

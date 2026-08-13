@@ -16,9 +16,28 @@ export default defineConfig({
             shuffle: true,
           },
           include: ["src/**/*.test.ts"],
+          exclude: ["src/__tests__/integration/**"],
           name: "unit",
           setupFiles: "./src/__tests__/setup.units.ts",
           environment: "jsdom",
+        },
+      },
+      {
+        extends: true,
+        test: {
+          sequence: {
+            concurrent: false,
+          },
+          include: ["src/__tests__/integration/**/*.integration.test.ts"],
+          name: "integration",
+          setupFiles: "./src/__tests__/integration/setup.integration.ts",
+          environment: "node",
+          pool: "threads",
+          poolOptions: {
+            threads: {
+              singleThread: true,
+            },
+          },
         },
       },
     ],

@@ -25,6 +25,7 @@
     "test:ci": "pnpm run test:unit --coverage",
     "test:e2e": "pnpm exec playwright test",
     "test:e2e-ui": "pnpm exec playwright test --ui",
+    "test:integration": "node ./scripts/prepare-integration-report.mjs && vitest run --project=integration --reporter=default --reporter=json --outputFile.json=./test-results/stripe-integration.json && node ./scripts/assert-integration-tests-executed.mjs ./test-results/stripe-integration.json",
     "test:unit": "vitest --project=unit"
   },
   "config": {

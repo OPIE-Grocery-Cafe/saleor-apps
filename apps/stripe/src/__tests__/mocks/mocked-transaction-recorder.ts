@@ -33,6 +33,15 @@ export class MockedTransactionRecorder implements TransactionRecorderRepo {
     }
   }
 
+  async recordStatus(
+    _accessPattern: TransactionRecorderRepoAccess,
+    event: { id: StripePaymentIntentId; status: string; eventAt: Date },
+  ): Promise<Result<"updated" | "stale", TransactionRecorderError>> {
+    return this.transactions[event.id]
+      ? ok("updated" as const)
+      : err(new TransactionRecorderError.TransactionMissingError("Transaction not found"));
+  }
+
   reset() {
     this.transactions = {};
   }

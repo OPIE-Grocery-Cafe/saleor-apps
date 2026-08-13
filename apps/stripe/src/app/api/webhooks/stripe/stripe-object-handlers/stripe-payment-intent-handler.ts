@@ -213,10 +213,27 @@ export class StripePaymentIntentHandler {
 
     const { saleorMoney, paymentIntentStatus, timestamp } = paramsResult.value;
 
-    await transactionRecorder.recordStatus?.(
+    const statusResult = await transactionRecorder.recordStatus(
       { appId, saleorApiUrl },
       { id: stripePaymentIntentId, status: event.data.object.status, eventAt: timestamp },
     );
+
+    if (statusResult.isErr()) {
+      this.logger.error("Failed to persist Stripe PaymentIntent status", {
+        error: statusResult.error,
+        paymentIntentId: stripePaymentIntentId,
+        stripeEventId: event.id,
+      });
+
+      return err(statusResult.error);
+    }
+
+    if (statusResult.value === "stale") {
+      this.logger.info("Ignored stale Stripe PaymentIntent status event", {
+        paymentIntentId: stripePaymentIntentId,
+        stripeEventId: event.id,
+      });
+    }
 
     const externalUrl = generatePaymentIntentStripeDashboardUrl(stripePaymentIntentId, stripeEnv);
 

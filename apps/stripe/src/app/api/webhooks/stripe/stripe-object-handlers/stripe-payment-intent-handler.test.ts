@@ -1,4 +1,4 @@
-import { ok } from "neverthrow";
+import { err, ok } from "neverthrow";
 import type Stripe from "stripe";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -19,6 +19,7 @@ import { getMockedPaymentIntentProcessingEvent } from "@/__tests__/mocks/stripe-
 import { getMockedPaymentIntentRequiresActionEvent } from "@/__tests__/mocks/stripe-events/mocked-payment-intent-requires-action";
 import { getMockedPaymentIntentSucceededEvent } from "@/__tests__/mocks/stripe-events/mocked-payment-intent-succeeded";
 import { createResolvedTransactionFlow } from "@/modules/resolved-transaction-flow";
+import { TransactionRecorderError } from "@/modules/transactions-recording/repositories/transaction-recorder-repo";
 
 import { StripePaymentIntentHandler } from "./stripe-payment-intent-handler";
 
@@ -54,6 +55,57 @@ describe("StripePaymentIntentHandler", () => {
   });
 
   describe("processPaymentIntentEvent", () => {
+    it("fails the webhook so Stripe retries when status persistence loses its mapping", async () => {
+      const recorder = new MockedTransactionRecorder();
+
+      recorder.transactions = {
+        [mockedStripePaymentIntentId]: getMockedRecordedTransaction({
+          resolvedTransactionFlow: createResolvedTransactionFlow("AUTHORIZATION"),
+        }),
+      };
+      vi.spyOn(recorder, "recordStatus").mockResolvedValue(
+        err(new TransactionRecorderError.TransactionMissingError("mapping disappeared")),
+      );
+
+      const result = await new StripePaymentIntentHandler().processPaymentIntentEvent({
+        event: getMockedPaymentIntentSucceededEvent(),
+        transactionRecorder: recorder,
+        appId: "appId",
+        saleorApiUrl: mockedSaleorApiUrl,
+        stripeEnv: "LIVE",
+        stripePaymentIntentsApi: mockedStripePaymentIntentsApi,
+      });
+
+      expect(result._unsafeUnwrapErr()).toBeInstanceOf(
+        TransactionRecorderError.TransactionMissingError,
+      );
+    });
+
+    it("records a stale status event as an observable successful no-op", async () => {
+      const recorder = new MockedTransactionRecorder();
+
+      recorder.transactions = {
+        [mockedStripePaymentIntentId]: getMockedRecordedTransaction({
+          resolvedTransactionFlow: createResolvedTransactionFlow("AUTHORIZATION"),
+        }),
+      };
+      vi.spyOn(recorder, "recordStatus").mockResolvedValue(ok("stale" as const));
+      vi.spyOn(mockedStripePaymentIntentsApi, "getPaymentIntent").mockResolvedValue(
+        ok({ payment_method: mockedStripeCardPaymentMethod }),
+      );
+
+      const result = await new StripePaymentIntentHandler().processPaymentIntentEvent({
+        event: getMockedPaymentIntentSucceededEvent(),
+        transactionRecorder: recorder,
+        appId: "appId",
+        saleorApiUrl: mockedSaleorApiUrl,
+        stripeEnv: "LIVE",
+        stripePaymentIntentsApi: mockedStripePaymentIntentsApi,
+      });
+
+      expect(result.isOk()).toBe(true);
+    });
+
     describe("type: payment_intent.succeeded", () => {
       it.each([
         createResolvedTransactionFlow("AUTHORIZATION"),
