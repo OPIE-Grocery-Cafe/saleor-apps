@@ -5,7 +5,7 @@
     "buildCommand": "corepack enable && pnpm install --frozen-lockfile && pnpm --filter saleor-app-payment-stripe build"
   },
   "deploy": {
-    "startCommand": "pnpm --filter saleor-app-payment-stripe exec next start -p $PORT",
+    "startCommand": "pnpm --filter saleor-app-payment-stripe exec next start -H :: -p $PORT",
     "healthcheckPath": "/api/health/ready",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE"
