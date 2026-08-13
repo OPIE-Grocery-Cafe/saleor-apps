@@ -16,14 +16,15 @@ export async function GET() {
       });
     }
     const ready = await apl.isReady?.();
-    const configured = await apl.isConfigured?.();
 
-    if (ready?.ready !== true || configured?.configured !== true) {
+    if (ready?.ready !== true) {
       throw new Error("SMTP persistence is not ready");
     }
-    const installations = await apl.getAll();
-
-    if (!installations.length) throw new Error("SMTP installation state is missing");
+    /*
+     * An empty installation set is healthy during first deployment. Reading it proves the
+     * runtime role can access installation state without preventing Saleor from installing it.
+     */
+    await apl.getAll();
 
     return Response.json({ status: "ready", persistence: env.PERSISTENCE_BACKEND });
   } catch (error) {

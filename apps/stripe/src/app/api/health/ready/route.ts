@@ -14,14 +14,16 @@ export async function GET() {
       });
     }
     const ready = await apl.isReady?.();
-    const configured = await apl.isConfigured?.();
 
-    if (ready?.ready !== true || configured?.configured !== true) {
+    if (ready?.ready !== true) {
       throw new Error("Stripe persistence is not ready");
     }
-    const installations = await apl.getAll();
-
-    if (!installations.length) throw new Error("Stripe installation state is missing");
+    /*
+     * Reading an empty installation set is valid during a fresh deployment. Requiring an
+     * installation here creates a bootstrap deadlock: Saleor cannot install an app whose
+     * deployment is held unhealthy. getAll still verifies the runtime role can read APL state.
+     */
+    await apl.getAll();
 
     return Response.json({ status: "ready", persistence: env.PERSISTENCE_BACKEND });
   } catch (error) {
