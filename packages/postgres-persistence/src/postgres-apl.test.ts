@@ -40,14 +40,13 @@ describe("PostgresAPL", () => {
     ]);
   });
 
-  it("reports unconfigured when no active installation exists", async () => {
+  it("reports configured before the first installation when the backend is usable", async () => {
     const query = vi.fn().mockResolvedValue({ rowCount: 0, rows: [] });
     const apl = new PostgresAPL({ query } as never, "stripe", encryptor);
 
     await expect(apl.isConfigured()).resolves.toMatchObject({
-      configured: false,
-      error: expect.any(Error),
+      configured: true,
     });
-    expect(query).toHaveBeenCalledWith(expect.stringContaining("revoked_at IS NULL"));
+    expect(query).toHaveBeenCalledWith(expect.stringContaining("stripe.saleor_installations"));
   });
 });

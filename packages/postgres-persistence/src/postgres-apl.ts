@@ -139,17 +139,10 @@ export class PostgresAPL implements APL {
 
   async isConfigured(): Promise<AplConfiguredResult> {
     try {
-      const result = await this.pool.query(
-        `SELECT 1 FROM ${this.schema}.saleor_installations WHERE revoked_at IS NULL LIMIT 1`,
-      );
-
-      if (!result.rowCount) {
-        return {
-          configured: false,
-          error: new Error(`No active ${this.schema} installation is configured`),
-        };
-      }
-
+      // The SDK invokes this before saving the first installation. For an APL,
+      // "configured" means its persistence backend is usable, not that it
+      // already contains an installed app.
+      await this.pool.query(`SELECT 1 FROM ${this.schema}.saleor_installations LIMIT 1`);
       return { configured: true };
     } catch (error) {
       return { configured: false, error: toError(error) };
