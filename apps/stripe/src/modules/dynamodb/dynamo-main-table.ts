@@ -71,5 +71,14 @@ const documentClient = createDynamoDBDocumentClient(client);
 
 export const dynamoMainTable = DynamoMainTable.create({
   documentClient: documentClient,
-  tableName: env.DYNAMODB_MAIN_TABLE_NAME,
+  tableName: env.DYNAMODB_MAIN_TABLE_NAME ?? "__dynamodb_not_configured__",
 });
+
+if (
+  (env.PERSISTENCE_BACKEND === "dynamodb" || env.APL === "dynamodb") &&
+  (!env.DYNAMODB_MAIN_TABLE_NAME || !env.AWS_REGION)
+) {
+  throw new Error(
+    "DYNAMODB_MAIN_TABLE_NAME and AWS_REGION are required when DynamoDB persistence is selected",
+  );
+}

@@ -32,6 +32,11 @@ export default {
   ],
   words: [
     "anonymization",
+    "cutover",
+    "OPIE",
+    "opie",
+    "PITR",
+    "postgres",
     "retryable",
     "atobarai",
     "avalara",

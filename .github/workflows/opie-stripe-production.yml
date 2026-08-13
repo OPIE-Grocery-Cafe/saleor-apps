@@ -25,11 +25,26 @@ jobs:
     timeout-minutes: 30
     env:
       HUSKY: 0
-      APL: file
+      APL: postgres
+      PERSISTENCE_BACKEND: postgres
+      COMMERCE_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/opie_commerce
+      COMMERCE_DATABASE_DIRECT_URL: postgresql://postgres:postgres@localhost:5432/opie_commerce
+      EXPECTED_COMMERCE_SCHEMA_VERSION: 0001_initial.sql
       SECRET_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-      DYNAMODB_MAIN_TABLE_NAME: opie-stripe-ci
-      AWS_REGION: us-east-1
       OPIE_INTERNAL_SECRET: 0123456789abcdef0123456789abcdef
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: opie_commerce
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
@@ -41,7 +56,18 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - name: Provision isolated test schemas
+        run: psql "$COMMERCE_DATABASE_DIRECT_URL" -v ON_ERROR_STOP=1 -c "create schema stripe; create schema smtp;"
+      - run: pnpm --filter saleor-app-payment-stripe migrate:postgres
+      - run: pnpm --filter saleor-app-smtp migrate:postgres
+      - run: pnpm --filter @saleor/postgres-persistence check-types
       - run: pnpm --filter saleor-app-payment-stripe check-types
+      - run: pnpm --filter saleor-app-smtp check-types
+      - run: pnpm --filter @saleor/postgres-persistence lint
       - run: pnpm --filter saleor-app-payment-stripe lint
-      - run: pnpm --filter saleor-app-payment-stripe exec vitest run --project=unit
+      - run: pnpm --filter saleor-app-smtp lint
+      - run: pnpm --filter @saleor/postgres-persistence exec vitest run --pool=threads --poolOptions.threads.singleThread=true
+      - run: pnpm --filter saleor-app-payment-stripe exec vitest run --project=unit --pool=threads --poolOptions.threads.singleThread=true
+      - run: pnpm --filter saleor-app-smtp exec vitest run
       - run: pnpm --filter saleor-app-payment-stripe build
+      - run: pnpm --filter saleor-app-smtp build

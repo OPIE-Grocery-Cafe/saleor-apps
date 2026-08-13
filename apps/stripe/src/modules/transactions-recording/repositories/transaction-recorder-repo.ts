@@ -63,4 +63,9 @@ export interface TransactionRecorderRepo {
     accessPattern: TransactionRecorderRepoAccess,
     id: StripePaymentIntentId,
   ): Promise<Result<RecordedTransaction, TransactionRecorderError>>;
+
+  recordStatus?(
+    accessPattern: TransactionRecorderRepoAccess,
+    event: { id: StripePaymentIntentId; status: string; eventAt: Date },
+  ): Promise<void>;
 }

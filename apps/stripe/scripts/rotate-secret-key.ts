@@ -6,6 +6,7 @@ import {
   resolveRotationSourceKeys,
   resolveRotationTargetKey,
 } from "@saleor/apps-shared/secret-key-resolution";
+import { rotatePostgresEncryptedColumns } from "@saleor/postgres-persistence/key-rotation";
 import * as Sentry from "@sentry/nextjs";
 
 import { env } from "@/lib/env";
@@ -38,24 +39,48 @@ Sentry.init({
   integrations: [],
 });
 
-const documentClient = createDynamoDBDocumentClient(
-  createDynamoDBClient({ requestTimeout: 30_000, connectionTimeout: 10_000 }),
-);
+const run =
+  env.PERSISTENCE_BACKEND === "postgres"
+    ? () =>
+        rotatePostgresEncryptedColumns({
+          connectionString: env.COMMERCE_DATABASE_URL ?? "",
+          schema: "stripe",
+          sourceKeys: resolveRotationSourceKeys(env),
+          targetKey: resolveRotationTargetKey(env),
+          dryRun: dryRun ?? false,
+          columns: [
+            { table: "saleor_installations", keyColumns: ["id"], valueColumn: "token_ciphertext" },
+            {
+              table: "configurations",
+              keyColumns: ["installation_id", "configuration_id"],
+              valueColumn: "restricted_key_ciphertext",
+            },
+            {
+              table: "configurations",
+              keyColumns: ["installation_id", "configuration_id"],
+              valueColumn: "webhook_secret_ciphertext",
+            },
+          ],
+        })
+    : () => {
+        const documentClient = createDynamoDBDocumentClient(
+          createDynamoDBClient({ requestTimeout: 30_000, connectionTimeout: 10_000 }),
+        );
 
-const runner = createDynamoDBSecretKeyRotationRunner({
-  secretKey: resolveRotationTargetKey(env),
-  fallbackKeys: resolveRotationSourceKeys(env),
-  dryRun: dryRun ?? false,
-  logger,
-  documentClient,
-  tableName: env.DYNAMODB_MAIN_TABLE_NAME,
-  encryptedFieldNames: ["stripeRk", "stripeWhSecret"],
-  decrypt: (value, key) => new Encryptor(key).decrypt(value),
-  encrypt: (plaintext, key) => new Encryptor(key).encrypt(plaintext),
-});
+        return createDynamoDBSecretKeyRotationRunner({
+          secretKey: resolveRotationTargetKey(env),
+          fallbackKeys: resolveRotationSourceKeys(env),
+          dryRun: dryRun ?? false,
+          logger,
+          documentClient,
+          tableName: env.DYNAMODB_MAIN_TABLE_NAME ?? "",
+          encryptedFieldNames: ["stripeRk", "stripeWhSecret"],
+          decrypt: (value, key) => new Encryptor(key).decrypt(value),
+          encrypt: (plaintext, key) => new Encryptor(key).encrypt(plaintext),
+        }).run();
+      };
 
-runner
-  .run()
+run()
   .then(({ failed }) => {
     if (failed > 0) process.exit(1);
   })

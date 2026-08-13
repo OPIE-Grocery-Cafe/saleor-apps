@@ -2,8 +2,10 @@ import { createHash } from "node:crypto";
 
 import type Stripe from "stripe";
 
+import { env } from "@/lib/env";
 import { type StripeConfig } from "@/modules/app-config/domain/stripe-config";
 import { type AppConfigRepo } from "@/modules/app-config/repositories/app-config-repo";
+import { getStripePostgresPool } from "@/modules/postgres/postgres";
 import { StripeClient } from "@/modules/stripe/stripe-client";
 
 import { type StoredPaymentAccess, StoredPaymentCustomerRepo } from "./customer-repo";
@@ -15,7 +17,12 @@ export class StoredPaymentMethodsService {
   private readonly appConfigRepo: AppConfigRepo;
   private readonly customerRepo: StoredPaymentCustomerRepo;
 
-  constructor(appConfigRepo: AppConfigRepo, customerRepo = new StoredPaymentCustomerRepo()) {
+  constructor(
+    appConfigRepo: AppConfigRepo,
+    customerRepo = new StoredPaymentCustomerRepo(
+      env.PERSISTENCE_BACKEND === "postgres" ? getStripePostgresPool() : undefined,
+    ),
+  ) {
     this.appConfigRepo = appConfigRepo;
     this.customerRepo = customerRepo;
   }

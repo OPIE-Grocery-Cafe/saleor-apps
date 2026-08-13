@@ -1,0 +1,56 @@
+name: OPIE Commerce Railway Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Railway environment to deploy
+        required: true
+        default: staging
+        type: choice
+        options: [staging, production]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: opie-commerce-release-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "20"
+      - name: Install pinned Railway CLI
+        run: npm install --global @railway/cli@5.37.4
+      - name: Run Stripe migration to terminal success
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway redeploy --service stripe-db-migrate --environment '${{ inputs.environment }}' --yes --from-source
+      - name: Run SMTP migration to terminal success
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway redeploy --service smtp-db-migrate --environment '${{ inputs.environment }}' --yes --from-source
+
+  deploy:
+    needs: migrate
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    strategy:
+      fail-fast: true
+      matrix:
+        service: [stripe-app, smtp-app]
+    steps:
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "20"
+      - name: Install pinned Railway CLI
+        run: npm install --global @railway/cli@5.37.4
+      - name: Deploy reviewed application commit
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway redeploy --service '${{ matrix.service }}' --environment '${{ inputs.environment }}' --yes --from-source

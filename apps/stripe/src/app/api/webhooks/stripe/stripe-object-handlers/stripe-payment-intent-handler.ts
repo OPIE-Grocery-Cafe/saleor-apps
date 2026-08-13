@@ -213,6 +213,11 @@ export class StripePaymentIntentHandler {
 
     const { saleorMoney, paymentIntentStatus, timestamp } = paramsResult.value;
 
+    await transactionRecorder.recordStatus?.(
+      { appId, saleorApiUrl },
+      { id: stripePaymentIntentId, status: event.data.object.status, eventAt: timestamp },
+    );
+
     const externalUrl = generatePaymentIntentStripeDashboardUrl(stripePaymentIntentId, stripeEnv);
 
     const paymentMethodDetails = this.checkIfSaleorSupportsPaymentMethodDetails(saleorSchemaVersion)

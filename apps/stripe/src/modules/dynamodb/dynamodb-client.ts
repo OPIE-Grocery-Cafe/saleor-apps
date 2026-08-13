@@ -26,7 +26,7 @@ export const createDynamoDBClient = (opts: DynamoDBClientOptions) => {
   const roleArn = env.AWS_ROLE_ARN;
   const accessKeyId = env.AWS_ACCESS_KEY_ID;
   const secretAccessKey = env.AWS_SECRET_ACCESS_KEY;
-  const region = env.AWS_REGION;
+  const region = env.AWS_REGION ?? "us-east-1";
 
   let credentials: DynamoDBClientConfig["credentials"];
 

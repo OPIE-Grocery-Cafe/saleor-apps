@@ -1,0 +1,32 @@
+{
+  "name": "@saleor/postgres-persistence",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./apl": "./src/postgres-apl.ts",
+    "./migration-runner": "./src/migration-runner.ts",
+    "./key-rotation": "./src/key-rotation.ts"
+  },
+  "scripts": {
+    "check-types": "tsc",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "test": "vitest",
+    "test:ci": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@saleor/app-sdk": "catalog:",
+    "@saleor/apps-shared": "workspace:*",
+    "pg": "8.16.3"
+  },
+  "devDependencies": {
+    "@saleor/eslint-config-apps": "workspace:*",
+    "@saleor/typescript-config-apps": "workspace:*",
+    "@types/pg": "8.15.6",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
