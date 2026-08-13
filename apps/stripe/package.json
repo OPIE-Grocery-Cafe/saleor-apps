@@ -20,13 +20,11 @@
     "migrate:postgres": "pnpm tsx --env-file-if-exists=.env ./scripts/migrate-postgres.ts",
     "rotate-secret-key": "pnpm tsx --env-file-if-exists=.env ./scripts/rotate-secret-key.ts",
     "rotate-secret-key:dry-run": "pnpm tsx --env-file-if-exists=.env ./scripts/rotate-secret-key.ts --dry-run",
-    "setup-dynamodb": "tsx --env-file-if-exists=.env ./scripts/setup-dynamodb.ts",
     "start": "next start",
     "test": "pnpm run test:unit",
     "test:ci": "pnpm run test:unit --coverage",
     "test:e2e": "pnpm exec playwright test",
     "test:e2e-ui": "pnpm exec playwright test --ui",
-    "test:integration": "vitest --project=integration",
     "test:unit": "vitest --project=unit"
   },
   "config": {
@@ -36,9 +34,6 @@
     }
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "catalog:",
-    "@aws-sdk/lib-dynamodb": "catalog:",
-    "@aws-sdk/util-dynamodb": "catalog:",
     "@hookform/resolvers": "catalog:",
     "@opentelemetry/api": "catalog:",
     "@opentelemetry/api-logs": "catalog:",
@@ -66,11 +61,9 @@
     "@trpc/next": "catalog:",
     "@trpc/react-query": "catalog:",
     "@trpc/server": "catalog:",
-    "@vercel/oidc-aws-credentials-provider": "catalog:",
     "@vercel/otel": "catalog:",
     "currency-codes": "2.2.0",
     "currency.js": "2.0.4",
-    "dynamodb-toolbox": "catalog:",
     "lucide-react": "catalog:",
     "modern-errors": "catalog:",
     "modern-errors-serialize": "catalog:",
@@ -106,7 +99,6 @@
     "@types/react-dom": "18.2.5",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
-    "aws-sdk-client-mock": "4.0.1",
     "eslint": "catalog:",
     "eslint-plugin-n": "catalog:",
     "graphql": "catalog:",

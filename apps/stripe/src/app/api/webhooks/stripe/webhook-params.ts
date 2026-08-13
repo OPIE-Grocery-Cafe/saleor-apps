@@ -21,10 +21,10 @@ export class WebhookParams {
   readonly saleorApiUrl: SaleorApiUrl;
   readonly configurationId: string;
   /**
-   * Require app ID to store a full DynamoDB access path in the webhook URL.
+   * Require the app ID to resolve the exact installation in PostgreSQL.
    *
    * If the app is removed, and we still receive the webhook (it's not removed automatically) we will have to somehow disable it.
-   * To do that, we need to fetch config from DB. And in DB the path requires saleorApiUrl, appID and configurationId.
+   * To do that, we need to fetch config from the database using saleorApiUrl, appID and configurationId.
    * We must have ALL of them in the webhook to make such a query.
    *
    * We will be also able to recognize if the current app installation is conflicting with the previous one.

@@ -5,16 +5,14 @@ import { apl } from "../../../../saleor-app";
 
 export async function GET() {
   try {
-    if (env.PERSISTENCE_BACKEND === "postgres") {
-      await assertDatabaseSchemaVersion({
-        pool: getPostgresPool({
-          applicationName: "saleor-smtp",
-          connectionString: env.COMMERCE_DATABASE_URL ?? "",
-        }),
-        schema: "smtp",
-        expectedVersion: env.EXPECTED_COMMERCE_SCHEMA_VERSION,
-      });
-    }
+    await assertDatabaseSchemaVersion({
+      pool: getPostgresPool({
+        applicationName: "saleor-smtp",
+        connectionString: env.COMMERCE_DATABASE_URL,
+      }),
+      schema: "smtp",
+      expectedVersion: env.EXPECTED_COMMERCE_SCHEMA_VERSION,
+    });
     const ready = await apl.isReady?.();
 
     if (ready?.ready !== true) {
@@ -26,7 +24,7 @@ export async function GET() {
      */
     await apl.getAll();
 
-    return Response.json({ status: "ready", persistence: env.PERSISTENCE_BACKEND });
+    return Response.json({ status: "ready", persistence: "postgres" });
   } catch (error) {
     return Response.json(
       { status: "not_ready", error: error instanceof Error ? error.message : "unknown" },

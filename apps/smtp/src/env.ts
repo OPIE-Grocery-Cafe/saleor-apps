@@ -13,9 +13,7 @@ export const env = createEnv({
   },
   server: {
     ALLOWED_DOMAIN_PATTERN: z.string().optional(),
-    APL: z.enum(["saleor-cloud", "file", "dynamodb", "upstash", "postgres"]).default("file"),
-    PERSISTENCE_BACKEND: z.enum(["dynamodb", "postgres"]).default("dynamodb"),
-    COMMERCE_DATABASE_URL: z.string().url().optional(),
+    COMMERCE_DATABASE_URL: z.string().url(),
     EXPECTED_COMMERCE_SCHEMA_VERSION: z.string().default("0001_initial.sql"),
     APP_API_BASE_URL: z.string().optional(),
     APP_IFRAME_BASE_URL: z.string().optional(),
@@ -55,8 +53,6 @@ export const env = createEnv({
   },
   runtimeEnv: {
     ALLOWED_DOMAIN_PATTERN: process.env.ALLOWED_DOMAIN_PATTERN,
-    APL: process.env.APL,
-    PERSISTENCE_BACKEND: process.env.PERSISTENCE_BACKEND,
     COMMERCE_DATABASE_URL: process.env.COMMERCE_DATABASE_URL,
     EXPECTED_COMMERCE_SCHEMA_VERSION: process.env.EXPECTED_COMMERCE_SCHEMA_VERSION,
     APP_API_BASE_URL: process.env.APP_API_BASE_URL,

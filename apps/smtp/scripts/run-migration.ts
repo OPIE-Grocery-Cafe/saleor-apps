@@ -34,6 +34,6 @@ const runMigration = async () => {
 runMigration();
 
 process.on("beforeExit", () => {
-  logger.info(`Migration complete for all environments from ${env.APL} APL`);
+  logger.info("Migration complete for all PostgreSQL installations");
   process.exit(0);
 });

@@ -37,7 +37,7 @@ This is a Saleor SMTP Application that handles email notifications for e-commerc
 - **Framework**: Next.js with TypeScript
 - **API Layer**: tRPC for type-safe APIs
 - **GraphQL**: URQL client with code generation
-- **Database**: DynamoDB (with support for multiple APL storages - used when installing app)
+- **Database**: PostgreSQL for installed-app authentication state
 - **Email Processing**: MJML for responsive email templates, Handlebars and `handlebars-helpers` for templating
 - **Testing**: Vitest with React Testing Library
 - **Monitoring**: Sentry and OpenTelemetry
@@ -49,7 +49,7 @@ This is a Saleor SMTP Application that handles email notifications for e-commerc
   - `smtp/` - Email configuration and sending logic
   - `trpc/` - tRPC setup and procedures
   - `webhook-management/` - Webhook handling
-  - `dynamodb/` - Database client
+  - shared PostgreSQL persistence package for the app installation token
   - `event-handlers/` - Event processing logic
 - `/src/lib` - Shared utilities and helpers
 - `/graphql` - GraphQL schema and operations
@@ -72,7 +72,7 @@ The app responds to Saleor events through webhooks:
 
 #### SMTP Configuration Service
 
-Located in `/src/modules/smtp/configuration/`, manages email templates and SMTP settings per event type. Configurations are stored in DynamoDB/APL.
+Located in `/src/modules/smtp/configuration/`, manages email templates and SMTP settings per event type. SMTP configuration is stored in encrypted Saleor metadata; PostgreSQL stores the installed-app token.
 
 #### Email Compilation Pipeline
 
@@ -83,14 +83,7 @@ Located in `/src/modules/smtp/configuration/`, manages email templates and SMTP 
 
 ### Environment Configuration
 
-The app supports multiple APL (Auth Persistence Layer) options:
-
-- `file` - Local development (default)
-- `upstash` - Production with Redis
-- `dynamodb` - AWS DynamoDB
-- `saleor-cloud` - Saleor Cloud APL
-
-Set via `APL` environment variable in `.env` file.
+This fork uses PostgreSQL as its Auth Persistence Layer in every environment.
 
 ### Testing Approach
 

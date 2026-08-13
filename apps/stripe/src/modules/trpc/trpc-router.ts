@@ -1,5 +1,5 @@
 /*
- * This module must only run on the server. It transitively imports AWS SDK, DynamoDB,
+ * This module must only run on the server. It transitively imports PostgreSQL clients,
  * and other Node.js-only dependencies. If it gets bundled into the client, those imports
  * crash module loading (missing Node APIs), which cascades into unrelated errors like
  * "app bridge used outside AppBridgeProvider".

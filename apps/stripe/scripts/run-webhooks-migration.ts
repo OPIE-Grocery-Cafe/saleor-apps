@@ -43,7 +43,7 @@ const runMigrations = async () => {
   const saleorAPL = saleorApp.apl;
 
   const saleorCloudEnv = await saleorAPL.getAll().catch(() => {
-    logger.error(`Could not fetch instances from the ${env.APL} APL`);
+    logger.error("Could not fetch installations from the PostgreSQL APL");
 
     process.exit(1);
   });
@@ -127,6 +127,6 @@ const runMigrations = async () => {
 runMigrations();
 
 process.on("beforeExit", () => {
-  logger.info(`Webhook migration complete for all environments from ${env.APL} APL`);
+  logger.info("Webhook migration complete for all PostgreSQL installations");
   process.exit(0);
 });

@@ -1,3 +1,4 @@
+import type { Pool } from "pg";
 import type Stripe from "stripe";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -10,7 +11,7 @@ import { StoredPaymentCustomerRepo } from "./customer-repo";
 import { StoredPaymentMethodsService } from "./service";
 
 describe("StoredPaymentMethodsService", () => {
-  const customerRepo = new StoredPaymentCustomerRepo();
+  const customerRepo = new StoredPaymentCustomerRepo({} as Pool);
   const stripe = {
     customers: { create: vi.fn() },
     setupIntents: { create: vi.fn(), retrieve: vi.fn() },

@@ -229,12 +229,6 @@ importers:
 
   .:
     devDependencies:
-      '@aws-sdk/client-dynamodb':
-        specifier: 'catalog:'
-        version: 3.1004.0
-      '@aws-sdk/lib-dynamodb':
-        specifier: 'catalog:'
-        version: 3.1004.0(@aws-sdk/client-dynamodb@3.1004.0)
       '@changesets/cli':
         specifier: 2.30.0
         version: 2.30.0(@types/node@24.1.0)
@@ -2357,15 +2351,6 @@ importers:
 
   apps/smtp:
     dependencies:
-      '@aws-sdk/client-dynamodb':
-        specifier: 'catalog:'
-        version: 3.1004.0
-      '@aws-sdk/lib-dynamodb':
-        specifier: 'catalog:'
-        version: 3.1004.0(@aws-sdk/client-dynamodb@3.1004.0)
-      '@aws-sdk/util-dynamodb':
-        specifier: 'catalog:'
-        version: 3.996.2(@aws-sdk/client-dynamodb@3.1004.0)
       '@hookform/resolvers':
         specifier: 'catalog:'
         version: 3.3.1(react-hook-form@7.43.9(react@18.2.0))
@@ -2453,9 +2438,6 @@ importers:
       '@trpc/server':
         specifier: 'catalog:'
         version: 10.45.3
-      '@vercel/oidc-aws-credentials-provider':
-        specifier: 'catalog:'
-        version: 3.0.7
       '@vercel/otel':
         specifier: 'catalog:'
         version: 1.10.1(@opentelemetry/api-logs@0.57.2)(@opentelemetry/api@1.9.0)(@opentelemetry/instrumentation@0.57.2(@opentelemetry/api@1.9.0))(@opentelemetry/resources@1.30.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-logs@0.57.2(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-metrics@1.30.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@1.30.1(@opentelemetry/api@1.9.0))
@@ -2465,9 +2447,6 @@ importers:
       dotenv:
         specifier: 'catalog:'
         version: 16.3.1
-      dynamodb-toolbox:
-        specifier: 'catalog:'
-        version: 2.8.0(@aws-sdk/client-dynamodb@3.1004.0)(@aws-sdk/lib-dynamodb@3.1004.0(@aws-sdk/client-dynamodb@3.1004.0))
       graphql:
         specifier: 'catalog:'
         version: 16.7.1
@@ -2613,15 +2592,6 @@ importers:
 
   apps/stripe:
     dependencies:
-      '@aws-sdk/client-dynamodb':
-        specifier: 'catalog:'
-        version: 3.1004.0
-      '@aws-sdk/lib-dynamodb':
-        specifier: 'catalog:'
-        version: 3.1004.0(@aws-sdk/client-dynamodb@3.1004.0)
-      '@aws-sdk/util-dynamodb':
-        specifier: 'catalog:'
-        version: 3.996.2(@aws-sdk/client-dynamodb@3.1004.0)
       '@hookform/resolvers':
         specifier: 'catalog:'
         version: 3.3.1(react-hook-form@7.43.9(react@18.2.0))
@@ -2703,9 +2673,6 @@ importers:
       '@trpc/server':
         specifier: 'catalog:'
         version: 10.45.3
-      '@vercel/oidc-aws-credentials-provider':
-        specifier: 'catalog:'
-        version: 3.0.7
       '@vercel/otel':
         specifier: 'catalog:'
         version: 1.10.1(@opentelemetry/api-logs@0.57.2)(@opentelemetry/api@1.9.0)(@opentelemetry/instrumentation@0.57.2(@opentelemetry/api@1.9.0))(@opentelemetry/resources@1.30.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-logs@0.57.2(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-metrics@1.30.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@1.30.1(@opentelemetry/api@1.9.0))
@@ -2715,9 +2682,6 @@ importers:
       currency.js:
         specifier: 2.0.4
         version: 2.0.4
-      dynamodb-toolbox:
-        specifier: 'catalog:'
-        version: 2.8.0(@aws-sdk/client-dynamodb@3.1004.0)(@aws-sdk/lib-dynamodb@3.1004.0(@aws-sdk/client-dynamodb@3.1004.0))
       lucide-react:
         specifier: 'catalog:'
         version: 0.536.0(react@18.2.0)
@@ -2818,9 +2782,6 @@ importers:
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 3.1.1(vitest@3.1.1(@types/node@24.1.0)(jiti@2.4.2)(jsdom@20.0.3)(msw@2.10.2(@types/node@24.1.0)(typescript@5.8.2))(terser@5.18.0)(tsx@4.19.3)(yaml@2.7.0))
-      aws-sdk-client-mock:
-        specifier: 4.0.1
-        version: 4.0.1
       eslint:
         specifier: 'catalog:'
         version: 9.23.0(jiti@2.4.2)

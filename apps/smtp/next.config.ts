@@ -23,10 +23,6 @@ const nextConfig: NextConfig = {
      */
     "handlebars",
     "handlebars-helpers",
-    "@aws-sdk/client-dynamodb",
-    "@aws-sdk/lib-dynamodb",
-    "@aws-sdk/util-dynamodb",
-    "dynamodb-toolbox",
   ],
   webpack: (config, { isServer }) => {
     if (isServer) {

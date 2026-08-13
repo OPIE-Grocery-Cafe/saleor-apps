@@ -363,7 +363,7 @@ export class TransactionInitializeSessionUseCase {
       });
 
       if (cancelResult.isErr()) {
-        this.logger.warn("Failed to cancel orphaned Payment Intent after DynamoDB write failure", {
+        this.logger.warn("Failed to cancel orphaned Payment Intent after persistence failure", {
           stripePaymentIntentId,
           error: cancelResult.error,
         });
@@ -372,7 +372,7 @@ export class TransactionInitializeSessionUseCase {
       return err(new BrokenAppResponse(appContextContainer.getContextValue(), recordResult.error));
     }
 
-    this.logger.info("Wrote Transaction to DynamoDB", {
+    this.logger.info("Recorded transaction in PostgreSQL", {
       transaction: recordedTransaction,
     });
 
