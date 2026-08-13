@@ -250,7 +250,10 @@ async function migrate(app: AppName, items: Item[]): Promise<void> {
       [randomUUID(), auth.saleorApiUrl, auth.appId, encryptor.encrypt(auth.token), auth.jwks ?? null, item.createdAt ?? null, item.modifiedAt ?? null],
     );
   }
-  if (app === "smtp") return;
+  if (app === "smtp") {
+    console.info(`migrated ${app}: count=${items.length} checksum=${checksum(items)}`);
+    return;
+  }
   const migrationOrder = ["StripeConfig", "ChannelConfigMapping", "RecordedTransaction", "StoredPaymentCustomer"];
 
   for (const item of items
