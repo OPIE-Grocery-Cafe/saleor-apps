@@ -11,7 +11,12 @@ type Item = Record<string, unknown>;
 
 const mode = parseMode(process.argv.slice(2));
 const checksumKey = required("MIGRATION_CHECKSUM_KEY");
-const directUrl = mode === "inventory" ? undefined : required("COMMERCE_DATABASE_DIRECT_URL");
+const directUrls: Partial<Record<AppName, string>> = mode === "inventory"
+  ? {}
+  : {
+      stripe: requiredAny("STRIPE_DATABASE_DIRECT_URL", "COMMERCE_DATABASE_DIRECT_URL"),
+      smtp: requiredAny("SMTP_DATABASE_DIRECT_URL", "COMMERCE_DATABASE_DIRECT_URL"),
+    };
 const secretKeys: Partial<Record<AppName, string>> = mode === "inventory"
   ? {}
   : {
@@ -36,7 +41,12 @@ const documentClient = DynamoDBDocumentClient.from(
       : undefined,
   }),
 );
-const pool = directUrl ? new pg.Pool({ connectionString: directUrl, max: 2 }) : undefined;
+const pools: Partial<Record<AppName, Pool>> = Object.fromEntries(
+  Object.entries(directUrls).map(([app, connectionString]) => [
+    app,
+    new pg.Pool({ connectionString, max: 2 }),
+  ]),
+);
 const encryptors: Partial<Record<AppName, Encryptor>> = Object.fromEntries(
   Object.entries(secretKeys).map(([app, key]) => [app, new Encryptor(key)]),
 );
@@ -65,7 +75,7 @@ try {
     }
   }
 } finally {
-  await pool?.end();
+  await Promise.all(Object.values(pools).map((pool) => pool.end()));
 }
 
 function reportRawInventory(app: AppName, items: Item[]): void {
@@ -223,6 +233,7 @@ function assertUnique(items: Item[], key: (item: Item) => string, label: string)
 }
 
 async function migrate(app: AppName, items: Item[]): Promise<void> {
+  const pool = pools[app];
   const encryptor = encryptors[app];
   if (!pool || !encryptor) throw new Error(`PostgreSQL ${app} migration dependencies are unavailable`);
   const aplItems = items.filter((item) => kind(item) === "APL");
@@ -299,6 +310,7 @@ async function migrate(app: AppName, items: Item[]): Promise<void> {
 }
 
 async function verify(app: AppName, source: Item[]): Promise<void> {
+  const pool = pools[app];
   if (!pool) throw new Error("PostgreSQL verification is unavailable");
   const exported = await readPostgresAsDynamo(app);
   if (source.length !== exported.length || checksum(source) !== checksum(exported)) {
@@ -324,6 +336,7 @@ async function exportForRollback(app: AppName, tableName: string): Promise<Item[
 }
 
 async function readPostgresAsDynamo(app: AppName): Promise<Item[]> {
+  const pool = pools[app];
   const encryptor = encryptors[app];
   if (!pool || !encryptor) throw new Error(`PostgreSQL ${app} export dependencies are unavailable`);
   const installations = await pool.query<{
@@ -353,6 +366,7 @@ async function readPostgresAsDynamo(app: AppName): Promise<Item[]> {
 }
 
 async function installation(schema: AppName, saleorApiUrl: string, appId: string): Promise<string> {
+  const pool = pools[schema];
   if (!pool) throw new Error("PostgreSQL installation lookup is unavailable");
   const result = await pool.query<{ id: string }>(`SELECT id FROM ${schema}.saleor_installations WHERE saleor_api_url=$1 AND app_id=$2 AND revoked_at IS NULL`, [saleorApiUrl, appId]);
   if (!result.rows[0]) throw new Error(`Missing ${schema} installation for dependent records`);
