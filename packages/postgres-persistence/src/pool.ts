@@ -24,7 +24,10 @@ export function createPostgresPool(config: PostgresRuntimeConfig): Pool {
     connectionTimeoutMillis: config.connectionTimeoutMillis ?? 2_000,
     idleTimeoutMillis: 30_000,
     keepAlive: true,
-    statement_timeout: config.statementTimeoutMillis ?? 5_000,
+    // PgBouncer transaction pooling rejects PostgreSQL startup parameters such
+    // as statement_timeout. node-postgres enforces query_timeout client-side
+    // without adding a startup parameter to the pooled connection.
+    query_timeout: config.statementTimeoutMillis ?? 5_000,
   });
 }
 
