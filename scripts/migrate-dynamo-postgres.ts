@@ -142,7 +142,17 @@ function selectAppItems(app: AppName, items: Item[]): Item[] {
   const expectedAppId = appIds[app];
 
   return items.filter((item) => {
-    if (kind(item) === "APL") return aplAuth(item).appId === expectedAppId;
+    if (kind(item) === "APL") {
+      const appId = aplAuth(item).appId;
+
+      if (appId === expectedAppId) return true;
+      if (items.filter((candidate) => kind(candidate) === "APL").length === 1) {
+        console.warn(`${app} APL app ID differs from the current manifest; preserving the installed identity`);
+        return true;
+      }
+
+      return false;
+    }
     if (app === "smtp") return false;
     return parseInstallationKey(String(item.PK)).appId === expectedAppId;
   });
