@@ -49,6 +49,7 @@ try {
     const discovered = scans.get(tableName) ?? await scanAll(tableName);
 
     scans.set(tableName, discovered);
+    if (mode === "inventory") reportRawInventory(app, discovered);
     validateDiscoveredItems(discovered);
     const items = selectAppItems(app, discovered);
     validateAppItems(app, items);
@@ -65,6 +66,18 @@ try {
   }
 } finally {
   await pool?.end();
+}
+
+function reportRawInventory(app: AppName, items: Item[]): void {
+  const shapes = items.map((item) => ({
+    keys: Object.keys(item)
+      .filter((key) => !["token", "authData", "stripeRk", "stripeWhSecret"].includes(key))
+      .sort(),
+    kind: kind(item),
+    entity: String(item._et ?? ""),
+    sortKey: String(dynamoSortKey(item) ?? ""),
+  }));
+  console.info(`${app} raw-inventory: count=${items.length} shapes=${JSON.stringify(shapes)}`);
 }
 
 function parseMode(args: string[]): Mode {
