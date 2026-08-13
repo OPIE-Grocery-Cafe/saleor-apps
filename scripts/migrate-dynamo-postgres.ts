@@ -80,7 +80,7 @@ async function scanAll(tableName: string): Promise<Item[]> {
 }
 
 function kind(item: Item): string {
-  if (item.SK === "APL") return "APL";
+  if (item.SK === "APL" || item._et === "APL") return "APL";
   const sk = String(item.SK ?? "");
   if (sk.startsWith("CONFIG_ID#")) return "StripeConfig";
   if (sk.startsWith("CHANNEL_ID#")) return "ChannelConfigMapping";
@@ -97,7 +97,9 @@ function validateDiscoveredItems(items: Item[]): void {
 
   if (unknown.length) throw new Error(`DynamoDB contains unsupported entity types: ${unknown.join(", ")}`);
   for (const item of items) {
-    if (!item.PK || !item.SK) throw new Error("DynamoDB contains malformed key data");
+    if (!dynamoPartitionKey(item) || !dynamoSortKey(item)) {
+      throw new Error("DynamoDB contains malformed key data");
+    }
     if (kind(item) === "APL") {
       const auth = aplAuth(item);
 
@@ -106,6 +108,14 @@ function validateDiscoveredItems(items: Item[]): void {
       }
     }
   }
+}
+
+function dynamoPartitionKey(item: Item): unknown {
+  return item.PK ?? item.pk;
+}
+
+function dynamoSortKey(item: Item): unknown {
+  return item.SK ?? item.sk;
 }
 
 function selectAppItems(app: AppName, items: Item[]): Item[] {
