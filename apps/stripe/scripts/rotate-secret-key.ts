@@ -5,7 +5,7 @@ import {
   resolveRotationTargetKey,
 } from "@saleor/apps-shared/secret-key-resolution";
 import { rotatePostgresEncryptedColumns } from "@saleor/postgres-persistence/key-rotation";
-import { scrubSensitiveEventData } from "@saleor/sentry-utils";
+import { scrubSensitiveEventData } from "@saleor/sentry-utils/scrub-sensitive-event-data";
 import * as Sentry from "@sentry/nextjs";
 
 import { env } from "@/lib/env";

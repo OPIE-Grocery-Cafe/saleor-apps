@@ -5,6 +5,9 @@
   "exports": {
     ".": {
       "default": "./index.ts"
+    },
+    "./scrub-sensitive-event-data": {
+      "default": "./src/scrub-sensitive-event-data.ts"
     }
   },
   "main": "index.ts",

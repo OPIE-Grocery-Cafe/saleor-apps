@@ -1,4 +1,4 @@
-import { scrubSensitiveEventData } from "@saleor/sentry-utils";
+import { scrubSensitiveEventData } from "@saleor/sentry-utils/scrub-sensitive-event-data";
 import {
   defaultStackParser,
   getCurrentScope,

@@ -1,6 +1,6 @@
 import { parseArgs } from "node:util";
 
-import { scrubSensitiveEventData } from "@saleor/sentry-utils";
+import { scrubSensitiveEventData } from "@saleor/sentry-utils/scrub-sensitive-event-data";
 import { WebhookMigrationRunner } from "@saleor/webhook-utils";
 import * as Sentry from "@sentry/nextjs";
 
