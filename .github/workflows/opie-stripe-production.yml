@@ -56,6 +56,7 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - run: pnpm check:secret-capture
       - name: Provision isolated migration and runtime roles
         run: psql postgresql://postgres:postgres@localhost:5432/opie_commerce -f .github/sql/provision-commerce-test.sql
       - name: Migrate Stripe as stripe_migrator

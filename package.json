@@ -8,6 +8,7 @@
     "build": "turbo run build",
     "check-spelling": "cspell '**/*.{jsx,tsx,js,ts,md,mdx}'",
     "check-types": "turbo run check-types",
+    "check:secret-capture": "node scripts/check-secret-capture.mjs",
     "deploy": "turbo run deploy",
     "dev": "turbo run dev",
     "fetch-schema": "curl https://raw.githubusercontent.com/saleor/saleor/${npm_package_config_saleor_schemaVersion}/saleor/graphql/schema.graphql > schema.graphql",

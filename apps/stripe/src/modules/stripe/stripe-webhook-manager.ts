@@ -92,6 +92,11 @@ export class StripeWebhookManager {
 
       return ok(null);
     } catch (e) {
+      if (isStripeResourceMissing(e)) {
+        this.logger.info("Stripe webhook was already absent", { id: webhookId });
+
+        return ok(null);
+      }
       this.logger.warn("Error removing webhook", { error: e });
 
       return err(new CantRemoveWebhookError("Error removing webhook", { cause: e }));
@@ -162,9 +167,21 @@ export class StripeWebhookManager {
          * Here we create it, so it must be there
          * If not, this is Panic
          */
-        throw new InvalidDataError(
+        const invalidData = new InvalidDataError(
           "Stripe did not return secret from webhook. This should not happen",
         );
+
+        try {
+          await client.nativeClient.webhookEndpoints.del(id);
+        } catch (cleanupError) {
+          throw new CantCreateWebhookError(`Failed to compensate Stripe webhook ${id}`, {
+            cause: new AggregateError(
+              [invalidData, cleanupError],
+              "Stripe webhook creation and compensation failed",
+            ),
+          });
+        }
+        throw invalidData;
       }
 
       return ok({ secret, id });
@@ -185,4 +202,11 @@ export class StripeWebhookManager {
       );
     }
   }
+}
+
+function isStripeResourceMissing(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const stripeError = error as { code?: unknown; rawType?: unknown };
+
+  return stripeError.code === "resource_missing" && stripeError.rawType === "invalid_request_error";
 }

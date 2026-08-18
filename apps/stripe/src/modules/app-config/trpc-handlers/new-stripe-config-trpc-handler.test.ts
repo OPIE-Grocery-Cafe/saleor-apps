@@ -56,6 +56,15 @@ describe("NewStripeConfigTrpcHandler", () => {
     vi.spyOn(stripe.paymentIntents, "list").mockImplementation(() => {
       return Promise.resolve({}) as Stripe.ApiListPromise<Stripe.PaymentIntent>;
     });
+    const missing = () => Promise.reject(resourceMissing());
+
+    vi.spyOn(stripe.paymentIntents, "retrieve").mockImplementation(missing);
+    vi.spyOn(stripe.paymentIntents, "capture").mockImplementation(missing);
+    vi.spyOn(stripe.paymentIntents, "cancel").mockImplementation(missing);
+    vi.spyOn(stripe.refunds, "create").mockImplementation(missing);
+    vi.spyOn(stripe.customers, "retrieve").mockImplementation(missing);
+    vi.spyOn(stripe.paymentMethods, "retrieve").mockImplementation(missing);
+    vi.spyOn(stripe.setupIntents, "retrieve").mockImplementation(missing);
     vi.spyOn(StripeClient, "createFromRestrictedKey").mockImplementation(() => {
       return {
         nativeClient: stripe,
@@ -67,6 +76,7 @@ describe("NewStripeConfigTrpcHandler", () => {
         secret: mockStripeWebhookSecret,
       }),
     );
+    vi.spyOn(webhookCreator, "removeWebhook").mockResolvedValue(ok(null));
   });
 
   it("Returns error 500 if repository fails to save config", async () => {
@@ -76,7 +86,7 @@ describe("NewStripeConfigTrpcHandler", () => {
       err(new BaseError("TEST")),
     );
 
-    return expect(() =>
+    await expect(() =>
       caller.testProcedure({
         name: "Test config",
         publishableKey: mockedStripePublishableKey,
@@ -85,6 +95,30 @@ describe("NewStripeConfigTrpcHandler", () => {
     ).rejects.toThrowErrorMatchingInlineSnapshot(
       `[TRPCError: Failed to create Stripe configuration. Data can't be saved.]`,
     );
+    expect(webhookCreator.removeWebhook).toHaveBeenCalledWith({
+      webhookId: "whid_1234",
+      restrictedKey: mockedStripeRestrictedKey,
+    });
+  });
+
+  it("removes the created webhook when Stripe returns an invalid secret", async () => {
+    vi.spyOn(webhookCreator, "createWebhook").mockResolvedValueOnce(
+      ok({ id: "whid_invalid_secret", secret: "unexpected_prefix" }),
+    );
+    vi.mocked(webhookCreator.removeWebhook).mockResolvedValueOnce(ok(null));
+    const { caller } = getTestCaller();
+
+    await expect(() =>
+      caller.testProcedure({
+        name: "Test config",
+        publishableKey: mockedStripePublishableKey,
+        restrictedKey: mockedStripeRestrictedKey,
+      }),
+    ).rejects.toThrow("Secret is invalid");
+    expect(webhookCreator.removeWebhook).toHaveBeenCalledWith({
+      webhookId: "whid_invalid_secret",
+      restrictedKey: mockedStripeRestrictedKey,
+    });
   });
 
   it("Returns 404 if config is in invalid shape (model can't be created)", () => {
@@ -177,3 +211,11 @@ describe("NewStripeConfigTrpcHandler", () => {
     });
   });
 });
+
+function resourceMissing() {
+  return new Stripe.errors.StripeInvalidRequestError({
+    message: "No such resource",
+    type: "invalid_request_error",
+    code: "resource_missing",
+  });
+}

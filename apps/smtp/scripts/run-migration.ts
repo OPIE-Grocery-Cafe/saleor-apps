@@ -1,5 +1,6 @@
 import { parseArgs } from "node:util";
 
+import { scrubSensitiveEventData } from "@saleor/sentry-utils";
 import * as Sentry from "@sentry/nextjs";
 
 import { env } from "../src/env";
@@ -21,7 +22,8 @@ const logger = createMigrationScriptLogger("RemoveDigitalContentUrlMigration");
 Sentry.init({
   dsn: env.NEXT_PUBLIC_SENTRY_DSN,
   environment: env.ENV,
-  includeLocalVariables: true,
+  includeLocalVariables: false,
+  beforeSend: scrubSensitiveEventData,
   skipOpenTelemetrySetup: true,
   ignoreErrors: [],
   integrations: [],

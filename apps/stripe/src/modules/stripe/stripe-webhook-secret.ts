@@ -26,7 +26,7 @@ export const StripeWebhookSecretSchema = z
       });
     }
 
-    return true;
+    return v.startsWith("whsec_");
   })
   .brand("StripeWebhookSecret");
 

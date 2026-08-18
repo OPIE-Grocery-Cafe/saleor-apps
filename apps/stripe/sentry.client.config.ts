@@ -1,3 +1,4 @@
+import { scrubSensitiveEventData } from "@saleor/sentry-utils";
 import * as Sentry from "@sentry/nextjs";
 
 import { env } from "@/lib/env";
@@ -8,4 +9,6 @@ Sentry.init({
   // we don't follow OTEL guide from Sentry https://docs.sentry.io/platforms/javascript/guides/nextjs/opentelemetry/custom-setup/ as we use Sentry just for error tracking
   skipOpenTelemetrySetup: true,
   ignoreErrors: ["TRPCClientError"],
+  includeLocalVariables: false,
+  beforeSend: scrubSensitiveEventData,
 });

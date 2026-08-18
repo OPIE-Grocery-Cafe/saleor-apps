@@ -6,6 +6,7 @@ import {
   resolveRotationSourceKeys,
   resolveRotationTargetKey,
 } from "@saleor/apps-shared/secret-key-resolution";
+import { scrubSensitiveEventData } from "@saleor/sentry-utils";
 import * as Sentry from "@sentry/nextjs";
 
 import { env } from "../src/env";
@@ -18,7 +19,8 @@ const logger = createLogger("rotate-secret-key");
 Sentry.init({
   dsn: env.NEXT_PUBLIC_SENTRY_DSN,
   environment: env.ENV,
-  includeLocalVariables: true,
+  includeLocalVariables: false,
+  beforeSend: scrubSensitiveEventData,
   skipOpenTelemetrySetup: true,
   ignoreErrors: [],
   integrations: [],

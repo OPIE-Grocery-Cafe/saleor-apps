@@ -5,6 +5,7 @@ import {
   resolveRotationTargetKey,
 } from "@saleor/apps-shared/secret-key-resolution";
 import { rotatePostgresEncryptedColumns } from "@saleor/postgres-persistence/key-rotation";
+import { scrubSensitiveEventData } from "@saleor/sentry-utils";
 import * as Sentry from "@sentry/nextjs";
 
 import { env } from "@/lib/env";
@@ -27,7 +28,8 @@ const logger = createMigrationScriptLogger("RotateSecretKey");
 Sentry.init({
   dsn: env.NEXT_PUBLIC_SENTRY_DSN,
   environment: env.ENV,
-  includeLocalVariables: true,
+  includeLocalVariables: false,
+  beforeSend: scrubSensitiveEventData,
   skipOpenTelemetrySetup: true,
   ignoreErrors: [],
   integrations: [],

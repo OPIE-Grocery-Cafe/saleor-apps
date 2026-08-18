@@ -121,11 +121,16 @@ export class NewStripeConfigTrpcHandler {
       const stripeWebhookSecretVo = createStripeWebhookSecret(rawStripeWebhookSecret);
 
       if (stripeWebhookSecretVo.isErr()) {
-        captureException(
-          new BaseError("Secret from Stripe doesnt match expected format", {
-            cause: stripeWebhookSecretVo.error,
-          }),
-        );
+        const error = new BaseError("Secret from Stripe doesnt match expected format", {
+          cause: stripeWebhookSecretVo.error,
+        });
+
+        captureException(error);
+        await this.compensateWebhook({
+          webhookId: stripeWebhookId,
+          restrictedKey: configValidation.value.restrictedKey,
+          primaryError: error,
+        });
 
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -143,11 +148,19 @@ export class NewStripeConfigTrpcHandler {
       });
 
       if (configToSave.isErr()) {
-        captureException(
-          new BaseError("Failed to create Stripe configuration. This should not happen", {
+        const error = new BaseError(
+          "Failed to create Stripe configuration. This should not happen",
+          {
             cause: configToSave.error,
-          }),
+          },
         );
+
+        captureException(error);
+        await this.compensateWebhook({
+          webhookId: stripeWebhookId,
+          restrictedKey: configValidation.value.restrictedKey,
+          primaryError: error,
+        });
 
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -163,6 +176,11 @@ export class NewStripeConfigTrpcHandler {
 
       if (saveResult.isErr()) {
         captureException(saveResult.error);
+        await this.compensateWebhook({
+          webhookId: stripeWebhookId,
+          restrictedKey: configValidation.value.restrictedKey,
+          primaryError: saveResult.error,
+        });
 
         // TODO Handle exact errors
         throw new TRPCError({
@@ -171,5 +189,28 @@ export class NewStripeConfigTrpcHandler {
         });
       }
     });
+  }
+
+  private async compensateWebhook({
+    webhookId,
+    restrictedKey,
+    primaryError,
+  }: {
+    webhookId: string;
+    restrictedKey: StripeRestrictedKey;
+    primaryError: Error;
+  }): Promise<void> {
+    const cleanup = await this.webhookManager.removeWebhook({ webhookId, restrictedKey });
+
+    if (cleanup.isErr()) {
+      captureException(
+        new BaseError(`Failed to compensate Stripe webhook ${webhookId}`, {
+          cause: new AggregateError(
+            [primaryError, cleanup.error],
+            "Configuration and compensation failed",
+          ),
+        }),
+      );
+    }
   }
 }

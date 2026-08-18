@@ -1,5 +1,6 @@
 import { parseArgs } from "node:util";
 
+import { scrubSensitiveEventData } from "@saleor/sentry-utils";
 import { WebhookMigrationRunner } from "@saleor/webhook-utils";
 import * as Sentry from "@sentry/nextjs";
 
@@ -31,7 +32,8 @@ const logger = createMigrationScriptLogger("WebhooksMigrationScript");
 Sentry.init({
   dsn: env.NEXT_PUBLIC_SENTRY_DSN,
   environment: env.ENV,
-  includeLocalVariables: true,
+  includeLocalVariables: false,
+  beforeSend: scrubSensitiveEventData,
   skipOpenTelemetrySetup: true,
   ignoreErrors: [],
   integrations: [],
