@@ -2,7 +2,7 @@ mutation checkoutCreate($channelSlug: String!, $variantId: ID!, $email: String!)
   checkoutCreate(
     input: {
       channel: $channelSlug
-      lines: [{ quantity: 10, variantId: $variantId }]
+      lines: [{ quantity: 1, variantId: $variantId }]
       email: $email
       shippingAddress: {
         city: "Wroclaw"
