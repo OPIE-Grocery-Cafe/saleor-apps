@@ -1,5 +1,18 @@
 # saleor-app-payment-stripe
 
+## 2.6.10
+
+### Patch Changes
+
+- 546b559: Updated Macaw UI to v2. Icons that used to come from Macaw UI (close, trash, edit, chevrons, arrows, copy, external link, and others) now come from Lucide, so a few icons look slightly different but keep the same meaning and placement.
+- 0080cce: Stripe no longer raises an error alert when it receives webhook events for a configuration that no longer exists. This happens when a configuration is deleted but its webhook endpoint is still active in Stripe — something outside the app's control. The situation is now surfaced to you as an App Problem, prompting you to remove the orphaned webhook in your Stripe Dashboard.
+
+## 2.6.9
+
+### Patch Changes
+
+- c8a4efe: When environment variables fail validation at startup, the app now prints a readable error message and the offending fields, then exits with code 1 — instead of dumping a long stack trace. Before: a wall of webpack stack frames around `Invalid environment variables`. After: e.g. `Validation error: Required at "SECRET_KEY"` followed by a JSON list of the failing fields.
+
 ## 2.6.8
 
 ### Patch Changes

@@ -1,5 +1,60 @@
 # saleor-app-smtp
 
+## 2.7.1
+
+### Patch Changes
+
+- 546b559: Updated Macaw UI to v2. Icons that used to come from Macaw UI (close, trash, edit, chevrons, arrows, copy, external link, and others) now come from Lucide, so a few icons look slightly different but keep the same meaning and placement.
+
+## 2.7.0
+
+### Minor Changes
+
+- 196cbf7: Added a "Custom variables" section to each SMTP configuration. You can now define your own global key-value pairs (e.g. `storefrontUrl`, `supportEmail`) instead of hard-coding them into templates, and reference them in any email template for that configuration as `{{customVariables.yourKey}}`.
+
+  Before: values like the storefront URL had to be pasted into every template by hand and updated in many places. After: define them once per configuration and use `{{customVariables.storefrontUrl}}` everywhere; the live template preview and editor autocomplete reflect your saved values (branding values now show in the preview too).
+
+## 2.6.0
+
+### Minor Changes
+
+- 518e484: The `ORDER_CREATED` email template payload now exposes the order's transactions, including payment method details (e.g. card brand and last digits, or gift card), charged amount and authorized amount. This lets you show which payment method(s) were used in your email templates, including split payments. The example templates were updated to demonstrate rendering this data.
+
+  Note: this requires Saleor 3.22 or newer (the minimum required version was bumped from 3.21), because transaction payment method details were added in Saleor 3.22.
+
+### Patch Changes
+
+- d72747d: Fixed SMTP order template saving so templates are validated with the matching event example payload instead of an empty payload. Templates that preview correctly for `ORDER_CREATED` can now be saved correctly.
+
+## 2.5.1
+
+### Patch Changes
+
+- a6c95f7: Fixed saving an email event configuration with an invalid template (e.g. a Handlebars helper called with the wrong argument type) returning a generic "Internal server error". These template problems are now reported as validation errors, so the UI shows the actual reason (for example "expected the first argument to be a number") instead of an unexpected server error. As a side effect, invalid-template attempts are no longer reported as application errors in monitoring.
+
+## 2.5.0
+
+### Minor Changes
+
+- f7f0e74: Minimum Saleor version required is now 3.21 (Saleor 3.20 is EOL)
+
+### Patch Changes
+
+- 686ff4d: Fixed the default "Gift card sent" email template so it shows the full redeemable gift card code instead of the masked display code. Before, the email rendered `giftCard.displayCode`, which only contains the last 4 characters of the code, so customers could not actually redeem the gift card. Now the template uses `giftCard.code` and shows the complete code.
+
+## 2.4.0
+
+### Minor Changes
+
+- 164454d: Implemented APP_DELETED handler. On Saleor 3.23+ app will react to its own removal and prune APL data
+
+### Patch Changes
+
+- c8a4efe: When environment variables fail validation at startup, the app now prints a readable error message and the offending fields, then exits with code 1 — instead of dumping a long stack trace. Before: a wall of webpack stack frames around `Invalid environment variables`. After: e.g. `Validation error: Required at "SECRET_KEY"` followed by a JSON list of the failing fields.
+- 8238117: Fixed the "Fallback behavior" section on the configuration page being stuck in a loading state for apps installed before the fallback setting was introduced. Previously, configurations saved without the fallback setting caused the section to show a skeleton loader forever. Now the section loads correctly, with the fallback disabled by default.
+- Updated dependencies [6683590]
+  - @saleor/webhook-utils@0.3.0
+
 ## 2.3.6
 
 ### Patch Changes

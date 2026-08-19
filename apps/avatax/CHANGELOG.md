@@ -1,5 +1,37 @@
 # saleor-app-avatax
 
+## 1.24.0
+
+### Minor Changes
+
+- b5f7b66: Added a "AvaTax tax code" widget to the product details page in the Dashboard. It shows the product's tax class and the AvaTax tax code it maps to, and warns when a product has no tax class or its tax class isn't mapped (so AvaTax's default code would be used). Requires Saleor 3.22+.
+
+  This adds the `MANAGE_PRODUCTS` permission to the app (needed to read a product's tax class), so the app will ask for approval of the new permission.
+
+### Patch Changes
+
+- 546b559: Updated Macaw UI to v2. Icons that used to come from Macaw UI (close, trash, edit, chevrons, arrows, copy, external link, and others) now come from Lucide, so a few icons look slightly different but keep the same meaning and placement.
+
+## 1.23.0
+
+### Minor Changes
+
+- f7f0e74: Minimum Saleor version required is now 3.21 (Saleor 3.20 is EOL)
+
+## 1.22.12
+
+### Patch Changes
+
+- 92e2026: Fixed AvaTax `ORDER_CONFIRMED` webhook failing with a validation error when a channel has no tax calculation strategy configured. Previously the app only accepted `TAX_APP` or `FLAT_RATES` and rejected the payload (returning a 500) when `taxCalculationStrategy` was `null`. Now a `null` strategy is accepted and treated like `FLAT_RATES` — the order is skipped instead of erroring, since the app is not the configured tax calculator for that channel.
+
+## 1.22.11
+
+### Patch Changes
+
+- c8a4efe: When environment variables fail validation at startup, the app now prints a readable error message and the offending fields, then exits with code 1 — instead of dumping a long stack trace. Before: a wall of webpack stack frames around `Invalid environment variables`. After: e.g. `Validation error: Required at "SECRET_KEY"` followed by a JSON list of the failing fields.
+- Updated dependencies [6683590]
+  - @saleor/webhook-utils@0.3.0
+
 ## 1.22.10
 
 ### Patch Changes

@@ -1,3 +1,7 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { type SettingsManager } from "@saleor/app-sdk/settings-manager";
 import { okAsync } from "neverthrow";
 import { type Client } from "urql";
@@ -8,7 +12,12 @@ import { type SmtpConfig } from "./smtp-config-schema";
 import { SmtpConfigurationService } from "./smtp-configuration.service";
 import { SmtpMetadataManager } from "./smtp-metadata-manager";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const mockSaleorApiUrl = "https://demo.saleor.io/graphql/";
+const customerOrderCreatedTemplate = readFileSync(
+  join(__dirname, "../services/__fixtures__/order-created-template.mjml"),
+  "utf-8",
+);
 
 // Minimal valid MJML template for testing
 const validMjmlTemplate = `<mjml>
@@ -26,6 +35,7 @@ const validConfig: SmtpConfig = {
     {
       id: "1685343953413npk9p",
       active: true,
+      customVariables: {},
       name: "Best name",
       smtpHost: "smtpHost",
       smtpPort: "1337",
@@ -117,6 +127,7 @@ const validConfig: SmtpConfig = {
     {
       id: "1685343951244olejs",
       active: false,
+      customVariables: {},
       name: "Deactivated name",
       smtpHost: "smtpHost",
       smtpPort: "1337",
@@ -472,6 +483,7 @@ describe("SmtpConfigurationService", function () {
         await service.createConfiguration({
           active: true,
           channels: { channels: [], mode: "exclude", override: false },
+          customVariables: {},
           encryption: "NONE",
           name: "New configuration",
           smtpHost: "smtp.example.com",
@@ -712,6 +724,37 @@ describe("SmtpConfigurationService", function () {
       )._unsafeUnwrap();
 
       expect(updatedEventConfiguration.subject).toStrictEqual("Updated subject");
+    });
+
+    it("validates ORDER_CREATED templates with the event example payload before saving", async () => {
+      const configurator = new SmtpMetadataManager(
+        null as unknown as SettingsManager,
+        mockSaleorApiUrl,
+      );
+
+      const setConfigMock = vi.spyOn(configurator, "setConfig").mockReturnValue(okAsync(undefined));
+
+      const service = new SmtpConfigurationService({
+        featureFlagService: new FeatureFlagService({
+          client: {} as Client,
+          saleorVersion: "3.14.0",
+        }),
+        metadataManager: configurator,
+        initialData: { ...validConfig },
+      });
+
+      const result = await service.updateEventConfiguration({
+        configurationId: validConfig.configurations[0].id,
+        eventType: "ORDER_CREATED",
+        eventConfiguration: {
+          ...validConfig.configurations[0].events[0],
+          subject: "Order {{order.number}}",
+          template: customerOrderCreatedTemplate,
+        },
+      });
+
+      expect(result.isOk()).toBe(true);
+      expect(setConfigMock).toBeCalledTimes(1);
     });
 
     it("Should throw error, when configuration does not exist", async () => {

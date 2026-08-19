@@ -4,6 +4,7 @@ import { BaseError } from "../../../errors";
 import { generateRandomId } from "../../../lib/generate-random-id";
 import { createLogger } from "../../../logger";
 import { filterConfigurations } from "../../app-configuration/filter-configurations";
+import { examplePayloads } from "../../event-handlers/default-payloads";
 import { type MessageEventTypes } from "../../event-handlers/message-event-types";
 import { type FeatureFlagService } from "../../feature-flag-service/feature-flag-service";
 import { EmailCompiler, type ErrorContext } from "../services/email-compiler";
@@ -49,13 +50,19 @@ function hasErrorContext(error: unknown): error is { errorContext?: ErrorContext
 
 export class SmtpConfigurationService implements IGetSmtpConfiguration, IGetFallbackSmtpEnabled {
   static SmtpConfigurationServiceError = BaseError.subclass("SmtpConfigurationServiceError");
-  static ConfigNotFoundError = BaseError.subclass("ConfigNotFoundError");
-  static EventConfigNotFoundError = BaseError.subclass("EventConfigNotFoundError");
-  static CantFetchConfigError = BaseError.subclass("CantFetchConfigError");
-  static WrongSaleorVersionError = BaseError.subclass("WrongSaleorVersionError");
-  static TemplateValidationError = BaseError.subclass("TemplateValidationError", {
-    props: {} as TemplateValidationErrorProps,
-  });
+  static ConfigNotFoundError = this.SmtpConfigurationServiceError.subclass("ConfigNotFoundError");
+  static EventConfigNotFoundError = this.SmtpConfigurationServiceError.subclass(
+    "EventConfigNotFoundError",
+  );
+  static CantFetchConfigError = this.SmtpConfigurationServiceError.subclass("CantFetchConfigError");
+  static WrongSaleorVersionError =
+    this.SmtpConfigurationServiceError.subclass("WrongSaleorVersionError");
+  static TemplateValidationError = this.SmtpConfigurationServiceError.subclass(
+    "TemplateValidationError",
+    {
+      props: {} as TemplateValidationErrorProps,
+    },
+  );
 
   private configurationData?: SmtpConfig;
   private metadataConfigurator: SmtpMetadataManager;
@@ -318,10 +325,12 @@ export class SmtpConfigurationService implements IGetSmtpConfiguration, IGetFall
   private validateEventTemplates(eventConfiguration: SmtpEventConfiguration) {
     logger.debug("Validating event templates");
 
+    const examplePayload = examplePayloads[eventConfiguration.eventType] ?? {};
+
     const validationResult = this.emailCompiler.validate(
       eventConfiguration.subject || "",
       eventConfiguration.template || "",
-      {}, // Empty payload for subject and template validation
+      examplePayload,
     );
 
     if (validationResult.isErr()) {
@@ -389,6 +398,35 @@ export class SmtpConfigurationService implements IGetSmtpConfiguration, IGetFall
         return okAsync(updatedEventConfiguration);
       });
     });
+  }
+
+  /**
+   * Replace the custom variables of a configuration. Accepts an array of key-value
+   * pairs (as produced by the UI) and flattens it to a `Record<string, string>` for storage.
+   */
+  updateCustomVariables({
+    id,
+    variables,
+  }: {
+    id: string;
+    variables: Array<{ key: string; value: string }>;
+  }) {
+    logger.debug("Update custom variables");
+
+    /**
+     * Use a null-prototype object so reserved keys (e.g. __proto__) can never pollute
+     * the prototype chain, even if input validation is somehow bypassed.
+     */
+    const customVariables = variables.reduce<Record<string, string>>(
+      (acc, { key, value }) => {
+        acc[key] = value;
+
+        return acc;
+      },
+      Object.create(null) as Record<string, string>,
+    );
+
+    return this.updateConfiguration({ id, customVariables });
   }
 
   updateFallbackSmtpSettings({ useSaleorSmtpFallback }: { useSaleorSmtpFallback: boolean }) {

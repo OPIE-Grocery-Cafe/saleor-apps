@@ -1,5 +1,35 @@
 # saleor-app-products-feed
 
+## 3.1.3
+
+### Patch Changes
+
+- 546b559: Updated Macaw UI to v2. Icons that used to come from Macaw UI (close, trash, edit, chevrons, arrows, copy, external link, and others) now come from Lucide, so a few icons look slightly different but keep the same meaning and placement.
+
+## 3.1.2
+
+### Patch Changes
+
+- 0e46758: Added a "Use SKU as GTIN" toggle to the Google feed attribute mapping. When enabled, variants without a mapped GTIN attribute use their SKU as the GTIN, so you no longer need to duplicate SKUs into a custom attribute. Products that have a mapped GTIN attribute keep that value.
+
+## 3.1.1
+
+### Patch Changes
+
+- 6e70f4e: The Google Merchant Center feed now uses a product's SEO description for the `g:description` attribute when one is set. Before, the feed always used the regular product description; now it prefers the SEO description and only falls back to the regular description when the SEO description is empty. This lets merchants control the description sent to Google Merchant Center via the product's SEO settings.
+
+## 3.1.0
+
+### Minor Changes
+
+- 164454d: Implemented APP_DELETED handler. On Saleor 3.23+ app will react to its own removal and prune APL data
+
+### Patch Changes
+
+- c8a4efe: When environment variables fail validation at startup, the app now prints a readable error message and the offending fields, then exits with code 1 — instead of dumping a long stack trace. Before: a wall of webpack stack frames around `Invalid environment variables`. After: e.g. `Validation error: Required at "SECRET_KEY"` followed by a JSON list of the failing fields.
+- Updated dependencies [6683590]
+  - @saleor/webhook-utils@0.3.0
+
 ## 3.0.8
 
 ### Patch Changes

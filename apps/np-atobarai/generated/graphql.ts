@@ -799,6 +799,32 @@ export type AllocationStrategyEnum =
   | 'PRIORITIZE_HIGH_STOCK'
   | 'PRIORITIZE_SORTING_ORDER';
 
+/** Lists current announcements that the user should see. */
+export type Announcement = {
+  /** The date & time at which this announcement was created. */
+  readonly createdAt: Scalars['DateTime']['output'];
+  /** Additional information about this announcement. */
+  readonly extra: Scalars['Metadata']['output'];
+  /** Determine the how critical the announcement is. UNSET if no severity level was defined for this announcement. */
+  readonly importance: AnnouncementImportanceEnum;
+  /** The announcement's description, may contain HTML formatting. */
+  readonly messageHtml: Scalars['String']['output'];
+  /** The announcement's title. */
+  readonly title: Scalars['String']['output'];
+  /** The announcement's type, for example "CUSTOM". Used to programatically distinguish between message types thus allowing to render the message differently, and allows to know the expected shape for the `extra` field. */
+  readonly type: Scalars['String']['output'];
+  /** The date & time at which this announcement was last updated. */
+  readonly updatedAt: Scalars['DateTime']['output'];
+};
+
+/** Defines a shop-level announcement's level/severity. */
+export type AnnouncementImportanceEnum =
+  | 'CRITICAL'
+  | 'HIGH'
+  | 'LOW'
+  | 'MODERATE'
+  | 'UNSET';
+
 /** Represents app data. */
 export type App = Node & ObjectWithMetadata & {
   /** Description of this app. */
@@ -1067,6 +1093,7 @@ export type AppError = {
 };
 
 export type AppErrorCode =
+  | 'DUPLICATED_EXTENSION_IDENTIFIER'
   | 'FORBIDDEN'
   | 'GRAPHQL_ERROR'
   | 'INVALID'
@@ -1091,6 +1118,12 @@ export type AppExtension = Node & {
   readonly app: App;
   /** The ID of the app extension. */
   readonly id: Scalars['ID']['output'];
+  /**
+   * Extension identifier, unique per app. Null when the app does not declare one.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly identifier?: Maybe<Scalars['String']['output']>;
   /** Label of the extension to show in the dashboard. */
   readonly label: Scalars['String']['output'];
   /**
@@ -1252,6 +1285,12 @@ export type AppManifestBrandLogoDefaultArgs = {
 };
 
 export type AppManifestExtension = {
+  /**
+   * Extension identifier, unique per app. Null when the app does not declare one.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly identifier?: Maybe<Scalars['String']['output']>;
   /** Label of the extension to show in the dashboard. */
   readonly label: Scalars['String']['output'];
   /**
@@ -2043,6 +2082,22 @@ export type AssignedSwatchAttributeValue = {
   readonly name?: Maybe<Scalars['String']['output']>;
   /** Slug of the selected swatch value. */
   readonly slug?: Maybe<Scalars['String']['output']>;
+  /**
+   * Translation of the name.
+   *
+   * Added in Saleor 3.22.
+   */
+  readonly translation?: Maybe<Scalars['String']['output']>;
+};
+
+
+/**
+ * Represents a single swatch value.
+ *
+ * Added in Saleor 3.22.
+ */
+export type AssignedSwatchAttributeValueTranslationArgs = {
+  languageCode: LanguageCodeEnum;
 };
 
 /**
@@ -2484,7 +2539,7 @@ export type AttributeCreated = Event & {
 /**
  * Deletes an attribute.
  *
- * Requires one of the following permissions: MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES.
+ * Requires one of the following permissions, depending on the attribute type: MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES for `PRODUCT_TYPE` attributes, MANAGE_PAGE_TYPES_AND_ATTRIBUTES for `PAGE_TYPE` attributes.
  *
  * Triggers the following webhook events:
  * - ATTRIBUTE_DELETED (async): An attribute was deleted.
@@ -2726,7 +2781,7 @@ export type AttributeTypeEnumFilterInput = {
 /**
  * Updates attribute.
  *
- * Requires one of the following permissions: MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES.
+ * Requires one of the following permissions, depending on the attribute type: MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES for `PRODUCT_TYPE` attributes, MANAGE_PAGE_TYPES_AND_ATTRIBUTES for `PAGE_TYPE` attributes.
  *
  * Triggers the following webhook events:
  * - ATTRIBUTE_UPDATED (async): An attribute was updated.
@@ -3333,6 +3388,11 @@ export type CalculateTaxes = Event & {
   readonly version?: Maybe<Scalars['String']['output']>;
 };
 
+/**
+ * Card data used to check a payment balance.
+ *
+ * The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+ */
 export type CardInput = {
   /** Payment method nonce, a token returned by the appropriate provider's SDK. */
   readonly code: Scalars['String']['input'];
@@ -4229,6 +4289,7 @@ export type Checkout = Node & ObjectWithMetadata & {
    *
    * Triggers the following webhook events:
    * - PAYMENT_LIST_GATEWAYS (sync): Fetch payment gateways available for checkout.
+   * @deprecated The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
    */
   readonly availablePaymentGateways: ReadonlyArray<PaymentGateway>;
   /**
@@ -4812,6 +4873,7 @@ export type CheckoutErrorCode =
   | 'NOT_FOUND'
   | 'NO_LINES'
   | 'PAYMENT_ERROR'
+  | 'PRICE_OVERRIDE_REASON_WITHOUT_OVERRIDE'
   | 'PRODUCT_NOT_PUBLISHED'
   | 'PRODUCT_UNAVAILABLE_FOR_PURCHASE'
   | 'QUANTITY_GREATER_THAN_LIMIT'
@@ -4927,6 +4989,14 @@ export type CheckoutLine = Node & ObjectWithMetadata & {
   /** Public metadata. Use `keys` to control which fields you want to include. The default is to include everything. */
   readonly metafields?: Maybe<Scalars['Metadata']['output']>;
   /**
+   * Reason explaining why a custom price was set on the line, provided by the app that set the price override.
+   *
+   * Added in Saleor 3.23.
+   *
+   * Requires one of the following permissions: MANAGE_CHECKOUTS, HANDLE_CHECKOUTS.
+   */
+  readonly priceOverrideReason?: Maybe<Scalars['String']['output']>;
+  /**
    * The sum of the checkout line price prior to promotion.
    *
    * Added in Saleor 3.21.
@@ -5040,6 +5110,12 @@ export type CheckoutLineInput = {
   readonly metadata?: InputMaybe<ReadonlyArray<MetadataInput>>;
   /** Custom price of the item. Can be set only by apps with `HANDLE_CHECKOUTS` permission. When the line with the same variant will be provided multiple times, the last price will be used. */
   readonly price?: InputMaybe<Scalars['PositiveDecimal']['input']>;
+  /**
+   * Reason explaining why a custom `price` was set on the line, for debugging and auditing. Can be set only by apps with `HANDLE_CHECKOUTS` permission and only when the line has a `price` override. Setting a new `price` without a reason clears the previous reason. Blank values are stored as no reason. Limited to 255 characters; longer values are truncated.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly priceOverrideReason?: InputMaybe<Scalars['String']['input']>;
   /** The number of items purchased. */
   readonly quantity: Scalars['Int']['input'];
   /** ID of the product variant. */
@@ -5078,6 +5154,12 @@ export type CheckoutLineUpdateInput = {
   readonly metadata?: InputMaybe<ReadonlyArray<MetadataInput>>;
   /** Custom price of the item. Can be set only by apps with `HANDLE_CHECKOUTS` permission. When the line with the same variant will be provided multiple times, the last price will be used. */
   readonly price?: InputMaybe<Scalars['PositiveDecimal']['input']>;
+  /**
+   * Reason explaining why a custom `price` was set on the line, for debugging and auditing. Can be set only by apps with `HANDLE_CHECKOUTS` permission and only when the line has a `price` override. Setting a new `price` without a reason clears the previous reason. Blank values are stored as no reason. Limited to 255 characters; longer values are truncated.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly priceOverrideReason?: InputMaybe<Scalars['String']['input']>;
   /** The number of items purchased. Optional for apps, required for any other users. */
   readonly quantity?: InputMaybe<Scalars['Int']['input']>;
   /**
@@ -7897,6 +7979,18 @@ export type Fulfillment = Node & ObjectWithMetadata & {
   readonly privateMetafield?: Maybe<Scalars['String']['output']>;
   /** Private metadata. Requires staff permissions to access. Use `keys` to control which fields you want to include. The default is to include everything. */
   readonly privateMetafields?: Maybe<Scalars['Metadata']['output']>;
+  /**
+   * Reason for returning this fulfillment.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly reason?: Maybe<Scalars['String']['output']>;
+  /**
+   * Reason Model (Page) reference for this fulfillment.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly reasonReference?: Maybe<Page>;
   /** Amount of refunded shipping price. */
   readonly shippingRefundedAmount?: Maybe<Money>;
   /** Status of fulfillment. */
@@ -8043,6 +8137,18 @@ export type FulfillmentLine = Node & {
   readonly orderLine?: Maybe<OrderLine>;
   /** The number of items included in the fulfillment line. */
   readonly quantity: Scalars['Int']['output'];
+  /**
+   * Reason for returning this fulfillment line.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly reason?: Maybe<Scalars['String']['output']>;
+  /**
+   * Reason Model (Page) reference for this fulfillment line.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly reasonReference?: Maybe<Page>;
 };
 
 /** Event sent when fulfillment metadata is updated. */
@@ -8179,6 +8285,22 @@ export type GiftCard = Node & ObjectWithMetadata & {
    * Requires one of the following permissions: MANAGE_APPS, OWNER.
    */
   readonly app?: Maybe<App>;
+  /**
+   * The customer the gift card usage is restricted to.
+   *
+   * Requires one of the following permissions: MANAGE_USERS, OWNER.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly assignedTo?: Maybe<User>;
+  /**
+   * Email of the customer the gift card is restricted to.
+   *
+   * Requires one of the following permissions: MANAGE_GIFT_CARD, OWNER.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly assignedToEmail?: Maybe<Scalars['String']['output']>;
   /** Slug of the channel where the gift card was bought. */
   readonly boughtInChannel?: Maybe<Scalars['String']['output']>;
   /**
@@ -8339,6 +8461,42 @@ export type GiftCardAddNoteInput = {
 };
 
 /**
+ * Restrict a gift card so only the given customer can use it.
+ *
+ * Added in Saleor 3.23.
+ *
+ * Requires one of the following permissions: MANAGE_GIFT_CARD.
+ *
+ * Triggers the following webhook events:
+ * - GIFT_CARD_UPDATED (async): A gift card was updated.
+ */
+export type GiftCardAssignUser = {
+  readonly errors: ReadonlyArray<GiftCardError>;
+  /** The assigned gift card. */
+  readonly giftCard?: Maybe<GiftCard>;
+  /** @deprecated Use `errors` field instead. */
+  readonly giftCardErrors: ReadonlyArray<GiftCardError>;
+};
+
+/**
+ * Adjust a gift card's balance by a delta.
+ *
+ * Added in Saleor 3.23.
+ *
+ * Requires one of the following permissions: MANAGE_GIFT_CARD.
+ *
+ * Triggers the following webhook events:
+ * - GIFT_CARD_UPDATED (async): A gift card was updated.
+ */
+export type GiftCardBalanceAdjust = {
+  readonly errors: ReadonlyArray<GiftCardError>;
+  /** The adjusted gift card. */
+  readonly giftCard?: Maybe<GiftCard>;
+  /** @deprecated Use `errors` field instead. */
+  readonly giftCardErrors: ReadonlyArray<GiftCardError>;
+};
+
+/**
  * Activate gift cards.
  *
  * Requires one of the following permissions: MANAGE_GIFT_CARD.
@@ -8444,6 +8602,12 @@ export type GiftCardCreate = {
 export type GiftCardCreateInput = {
   /** The gift card tags to add. */
   readonly addTags?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  /**
+   * ID of the customer the gift card is restricted to.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly assignedTo?: InputMaybe<Scalars['ID']['input']>;
   /** Balance of the gift card. */
   readonly balance: PriceInput;
   /** Slug of a channel from which the email should be sent. */
@@ -8561,6 +8725,7 @@ export type GiftCardError = {
 
 export type GiftCardErrorCode =
   | 'ALREADY_EXISTS'
+  | 'CANNOT_ASSIGN'
   | 'DUPLICATED_INPUT_ITEM'
   | 'EXPIRED_GIFT_CARD'
   | 'GRAPHQL_ERROR'
@@ -8573,6 +8738,12 @@ export type GiftCardErrorCode =
 export type GiftCardEvent = Node & {
   /** App that performed the action. Requires one of the following permissions: MANAGE_APPS, OWNER. */
   readonly app?: Maybe<App>;
+  /**
+   * The customer assignment change recorded by the event. Only set for ASSIGNED_TO_USER and UNASSIGNED_FROM_USER events.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly assignedTo?: Maybe<GiftCardEventAssignment>;
   /** The gift card balance. */
   readonly balance?: Maybe<GiftCardEventBalance>;
   /** Date when event happened at in ISO 8601 format. */
@@ -8601,6 +8772,25 @@ export type GiftCardEvent = Node & {
   readonly user?: Maybe<User>;
 };
 
+export type GiftCardEventAssignment = {
+  /**
+   * The customer the gift card is assigned to after this event.
+   *
+   * Requires one of the following permissions: MANAGE_USERS, MANAGE_STAFF, OWNER.
+   */
+  readonly currentAssignedTo?: Maybe<User>;
+  /** Email of the customer the gift card is assigned to after this event. */
+  readonly currentAssignedToEmail?: Maybe<Scalars['String']['output']>;
+  /**
+   * The customer the gift card was assigned to before this event.
+   *
+   * Requires one of the following permissions: MANAGE_USERS, MANAGE_STAFF, OWNER.
+   */
+  readonly oldAssignedTo?: Maybe<User>;
+  /** Email of the customer the gift card was assigned to before this event. */
+  readonly oldAssignedToEmail?: Maybe<Scalars['String']['output']>;
+};
+
 export type GiftCardEventBalance = {
   /** Current balance of the gift card. */
   readonly currentBalance: Money;
@@ -8619,6 +8809,8 @@ export type GiftCardEventFilterInput = {
 
 export type GiftCardEventsEnum =
   | 'ACTIVATED'
+  | 'ASSIGNED_TO_USER'
+  | 'BALANCE_ADJUSTED'
   | 'BALANCE_RESET'
   | 'BOUGHT'
   | 'DEACTIVATED'
@@ -8629,6 +8821,7 @@ export type GiftCardEventsEnum =
   | 'RESENT'
   | 'SENT_TO_CUSTOMER'
   | 'TAGS_UPDATED'
+  | 'UNASSIGNED_FROM_USER'
   | 'UPDATED'
   | 'USED_IN_ORDER';
 
@@ -8647,6 +8840,12 @@ export type GiftCardExportCompleted = Event & {
 };
 
 export type GiftCardFilterInput = {
+  /**
+   * Filter by the customer the gift card usage is restricted to.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly assignedTo?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
   readonly code?: InputMaybe<Scalars['String']['input']>;
   readonly createdByEmail?: InputMaybe<Scalars['String']['input']>;
   readonly currency?: InputMaybe<Scalars['String']['input']>;
@@ -8657,6 +8856,10 @@ export type GiftCardFilterInput = {
   readonly products?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
   readonly tags?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
   readonly used?: InputMaybe<Scalars['Boolean']['input']>;
+  /**
+   * Filter by the customer who used a gift card.
+   * @deprecated Field no longer supported
+   */
   readonly usedBy?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
 };
 
@@ -8866,6 +9069,24 @@ export type GiftCardTagCountableEdge = {
 
 export type GiftCardTagFilterInput = {
   readonly search?: InputMaybe<Scalars['String']['input']>;
+};
+
+/**
+ * Remove a customer restriction from a gift card.
+ *
+ * Added in Saleor 3.23.
+ *
+ * Requires one of the following permissions: MANAGE_GIFT_CARD.
+ *
+ * Triggers the following webhook events:
+ * - GIFT_CARD_UPDATED (async): A gift card was updated.
+ */
+export type GiftCardUnassignUser = {
+  readonly errors: ReadonlyArray<GiftCardError>;
+  /** The unassigned gift card. */
+  readonly giftCard?: Maybe<GiftCard>;
+  /** @deprecated Use `errors` field instead. */
+  readonly giftCardErrors: ReadonlyArray<GiftCardError>;
 };
 
 /**
@@ -11958,7 +12179,7 @@ export type Mutation = {
   /**
    * Deletes an attribute.
    *
-   * Requires one of the following permissions: MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES.
+   * Requires one of the following permissions, depending on the attribute type: MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES for `PRODUCT_TYPE` attributes, MANAGE_PAGE_TYPES_AND_ATTRIBUTES for `PAGE_TYPE` attributes.
    *
    * Triggers the following webhook events:
    * - ATTRIBUTE_DELETED (async): An attribute was deleted.
@@ -11983,7 +12204,7 @@ export type Mutation = {
   /**
    * Updates attribute.
    *
-   * Requires one of the following permissions: MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES.
+   * Requires one of the following permissions, depending on the attribute type: MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES for `PRODUCT_TYPE` attributes, MANAGE_PAGE_TYPES_AND_ATTRIBUTES for `PAGE_TYPE` attributes.
    *
    * Triggers the following webhook events:
    * - ATTRIBUTE_UPDATED (async): An attribute was updated.
@@ -12254,7 +12475,10 @@ export type Mutation = {
    * - CHECKOUT_UPDATED (async): A checkout was updated.
    */
   readonly checkoutLinesUpdate?: Maybe<CheckoutLinesUpdate>;
-  /** Creates a new payment for given checkout. */
+  /**
+   * Creates a new payment for given checkout.
+   * @deprecated The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+   */
   readonly checkoutPaymentCreate?: Maybe<CheckoutPaymentCreate>;
   /**
    * Remove a gift card or a voucher from a checkout.
@@ -12555,6 +12779,28 @@ export type Mutation = {
    */
   readonly giftCardAddNote?: Maybe<GiftCardAddNote>;
   /**
+   * Restrict a gift card so only the given customer can use it.
+   *
+   * Added in Saleor 3.23.
+   *
+   * Requires one of the following permissions: MANAGE_GIFT_CARD.
+   *
+   * Triggers the following webhook events:
+   * - GIFT_CARD_UPDATED (async): A gift card was updated.
+   */
+  readonly giftCardAssignUser?: Maybe<GiftCardAssignUser>;
+  /**
+   * Adjust a gift card's balance by a delta.
+   *
+   * Added in Saleor 3.23.
+   *
+   * Requires one of the following permissions: MANAGE_GIFT_CARD.
+   *
+   * Triggers the following webhook events:
+   * - GIFT_CARD_UPDATED (async): A gift card was updated.
+   */
+  readonly giftCardBalanceAdjust?: Maybe<GiftCardBalanceAdjust>;
+  /**
    * Activate gift cards.
    *
    * Requires one of the following permissions: MANAGE_GIFT_CARD.
@@ -12634,6 +12880,17 @@ export type Mutation = {
    * Requires one of the following permissions: MANAGE_GIFT_CARD.
    */
   readonly giftCardSettingsUpdate?: Maybe<GiftCardSettingsUpdate>;
+  /**
+   * Remove a customer restriction from a gift card.
+   *
+   * Added in Saleor 3.23.
+   *
+   * Requires one of the following permissions: MANAGE_GIFT_CARD.
+   *
+   * Triggers the following webhook events:
+   * - GIFT_CARD_UPDATED (async): A gift card was updated.
+   */
+  readonly giftCardUnassignUser?: Maybe<GiftCardUnassignUser>;
   /**
    * Update a gift card.
    *
@@ -12805,6 +13062,7 @@ export type Mutation = {
    * Capture an order.
    *
    * Requires one of the following permissions: MANAGE_ORDERS.
+   * @deprecated The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
    */
   readonly orderCapture?: Maybe<OrderCapture>;
   /**
@@ -12959,6 +13217,7 @@ export type Mutation = {
    * Refund an order.
    *
    * Requires one of the following permissions: MANAGE_ORDERS.
+   * @deprecated The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
    */
   readonly orderRefund?: Maybe<OrderRefund>;
   /**
@@ -12984,6 +13243,7 @@ export type Mutation = {
    * Void an order.
    *
    * Requires one of the following permissions: MANAGE_ORDERS.
+   * @deprecated The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
    */
   readonly orderVoid?: Maybe<OrderVoid>;
   /**
@@ -13080,9 +13340,13 @@ export type Mutation = {
    * Captures the authorized payment amount.
    *
    * Requires one of the following permissions: MANAGE_ORDERS.
+   * @deprecated The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
    */
   readonly paymentCapture?: Maybe<PaymentCapture>;
-  /** Check payment balance. */
+  /**
+   * Check payment balance.
+   * @deprecated The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+   */
   readonly paymentCheckBalance?: Maybe<PaymentCheckBalance>;
   /** Initializes a payment gateway session. It triggers the webhook `PAYMENT_GATEWAY_INITIALIZE_SESSION`, to the requested `paymentGateways`. If `paymentGateways` is not provided, the webhook will be send to all subscribed payment gateways. There is a limit of 100 transaction items per checkout / order. */
   readonly paymentGatewayInitialize?: Maybe<PaymentGatewayInitialize>;
@@ -13095,7 +13359,10 @@ export type Mutation = {
    * - PAYMENT_GATEWAY_INITIALIZE_TOKENIZATION_SESSION (sync): The customer requested to initialize payment gateway for tokenization.
    */
   readonly paymentGatewayInitializeTokenization?: Maybe<PaymentGatewayInitializeTokenization>;
-  /** Initializes payment process when it is required by gateway. */
+  /**
+   * Initializes payment process when it is required by gateway.
+   * @deprecated The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+   */
   readonly paymentInitialize?: Maybe<PaymentInitialize>;
   /**
    * Tokenize payment method.
@@ -13119,12 +13386,14 @@ export type Mutation = {
    * Refunds the captured payment amount.
    *
    * Requires one of the following permissions: MANAGE_ORDERS.
+   * @deprecated The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
    */
   readonly paymentRefund?: Maybe<PaymentRefund>;
   /**
    * Voids the authorized payment.
    *
    * Requires one of the following permissions: MANAGE_ORDERS.
+   * @deprecated The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
    */
   readonly paymentVoid?: Maybe<PaymentVoid>;
   /**
@@ -13544,6 +13813,22 @@ export type Mutation = {
    * - STAFF_SET_PASSWORD_REQUESTED (async): Setting a new password for the staff account is requested.
    */
   readonly requestPasswordReset?: Maybe<RequestPasswordReset>;
+  /**
+   * Updates ReturnSettings. The `Page` (Model) Type will be cleared from `reasonReferenceType`. When it's cleared, passing reason reference to return mutations is no longer accepted and will raise error.
+   *
+   * Added in Saleor 3.23.
+   *
+   * Requires one of the following permissions: MANAGE_SETTINGS.
+   */
+  readonly returnReasonReferenceClear?: Maybe<ReturnReasonReferenceTypeClear>;
+  /**
+   * Update return settings across all channels.
+   *
+   * Added in Saleor 3.23.
+   *
+   * Requires one of the following permissions: MANAGE_SETTINGS.
+   */
+  readonly returnSettingsUpdate?: Maybe<ReturnSettingsUpdate>;
   /**
    * Deletes sales.
    *
@@ -14765,6 +15050,18 @@ export type MutationGiftCardAddNoteArgs = {
 };
 
 
+export type MutationGiftCardAssignUserArgs = {
+  id: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+
+export type MutationGiftCardBalanceAdjustArgs = {
+  amount: Scalars['Decimal']['input'];
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationGiftCardBulkActivateArgs = {
   ids: ReadonlyArray<Scalars['ID']['input']>;
 };
@@ -14807,6 +15104,11 @@ export type MutationGiftCardResendArgs = {
 
 export type MutationGiftCardSettingsUpdateArgs = {
   input: GiftCardSettingsUpdateInput;
+};
+
+
+export type MutationGiftCardUnassignUserArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -15557,6 +15859,11 @@ export type MutationRequestPasswordResetArgs = {
 };
 
 
+export type MutationReturnSettingsUpdateArgs = {
+  input: ReturnSettingsUpdateInput;
+};
+
+
 export type MutationSaleBulkDeleteArgs = {
   ids: ReadonlyArray<Scalars['ID']['input']>;
 };
@@ -16200,7 +16507,10 @@ export type Order = Node & ObjectWithMetadata & {
   readonly paymentStatus: PaymentChargeStatusEnum;
   /** User-friendly payment status. */
   readonly paymentStatusDisplay: Scalars['String']['output'];
-  /** List of payments for the order. */
+  /**
+   * List of payments for the order.
+   * @deprecated The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+   */
   readonly payments: ReadonlyArray<Payment>;
   /** List of private metadata items. Requires staff permissions to access. */
   readonly privateMetadata: ReadonlyArray<MetadataItem>;
@@ -17287,6 +17597,10 @@ export type OrderFilterInput = {
   readonly isPreorder?: InputMaybe<Scalars['Boolean']['input']>;
   readonly metadata?: InputMaybe<ReadonlyArray<MetadataFilter>>;
   readonly numbers?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  /**
+   * Filter orders by payment charge status.
+   * @deprecated The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+   */
   readonly paymentStatus?: InputMaybe<ReadonlyArray<PaymentChargeStatusEnum>>;
   readonly search?: InputMaybe<Scalars['String']['input']>;
   readonly status?: InputMaybe<ReadonlyArray<OrderStatusFilter>>;
@@ -17425,6 +17739,7 @@ export type OrderGrantRefundCreateErrorCode =
   | 'AMOUNT_GREATER_THAN_AVAILABLE'
   | 'GRAPHQL_ERROR'
   | 'INVALID'
+  | 'NOT_CONFIGURED'
   | 'NOT_FOUND'
   | 'REQUIRED'
   | 'SHIPPING_COSTS_ALREADY_GRANTED';
@@ -17467,6 +17782,8 @@ export type OrderGrantRefundCreateLineError = {
 
 export type OrderGrantRefundCreateLineErrorCode =
   | 'GRAPHQL_ERROR'
+  | 'INVALID'
+  | 'NOT_CONFIGURED'
   | 'NOT_FOUND'
   | 'QUANTITY_GREATER_THAN_AVAILABLE';
 
@@ -17477,6 +17794,12 @@ export type OrderGrantRefundCreateLineInput = {
   readonly quantity: Scalars['Int']['input'];
   /** Reason of the granted refund for the line. */
   readonly reason?: InputMaybe<Scalars['String']['input']>;
+  /**
+   * ID of a `Page` (Model) to reference in reason for the line.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly reasonReference?: InputMaybe<Scalars['ID']['input']>;
 };
 
 /**
@@ -17509,6 +17832,7 @@ export type OrderGrantRefundUpdateErrorCode =
   | 'AMOUNT_GREATER_THAN_AVAILABLE'
   | 'GRAPHQL_ERROR'
   | 'INVALID'
+  | 'NOT_CONFIGURED'
   | 'NOT_FOUND'
   | 'REQUIRED'
   | 'SHIPPING_COSTS_ALREADY_GRANTED';
@@ -17547,6 +17871,12 @@ export type OrderGrantRefundUpdateLineAddInput = {
   readonly quantity: Scalars['Int']['input'];
   /** Reason of the granted refund for the line. */
   readonly reason?: InputMaybe<Scalars['String']['input']>;
+  /**
+   * ID of a `Page` (Model) to reference in reason for the line.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly reasonReference?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type OrderGrantRefundUpdateLineError = {
@@ -17562,6 +17892,8 @@ export type OrderGrantRefundUpdateLineError = {
 
 export type OrderGrantRefundUpdateLineErrorCode =
   | 'GRAPHQL_ERROR'
+  | 'INVALID'
+  | 'NOT_CONFIGURED'
   | 'NOT_FOUND'
   | 'QUANTITY_GREATER_THAN_AVAILABLE';
 
@@ -17623,6 +17955,12 @@ export type OrderGrantedRefundLine = {
   readonly quantity: Scalars['Int']['output'];
   /** Reason for refunding the line. */
   readonly reason?: Maybe<Scalars['String']['output']>;
+  /**
+   * Reason Model (Page) reference for this refund line.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly reasonReference?: Maybe<Page>;
 };
 
 /**
@@ -17677,6 +18015,14 @@ export type OrderLine = Node & ObjectWithMetadata & {
   readonly metafield?: Maybe<Scalars['String']['output']>;
   /** Public metadata. Use `keys` to control which fields you want to include. The default is to include everything. */
   readonly metafields?: Maybe<Scalars['Metadata']['output']>;
+  /**
+   * Reason explaining why a custom price was set on the line, copied from the checkout line when the order was created from a checkout.
+   *
+   * Added in Saleor 3.23.
+   *
+   * Requires one of the following permissions: MANAGE_ORDERS.
+   */
+  readonly priceOverrideReason?: Maybe<Scalars['String']['output']>;
   /** List of private metadata items. Requires staff permissions to access. */
   readonly privateMetadata: ReadonlyArray<MetadataItem>;
   /**
@@ -18064,6 +18410,18 @@ export type OrderReturnFulfillmentLineInput = {
   readonly fulfillmentLineId: Scalars['ID']['input'];
   /** The number of items to be returned. */
   readonly quantity: Scalars['Int']['input'];
+  /**
+   * Reason for returning this fulfillment line.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly reason?: InputMaybe<Scalars['String']['input']>;
+  /**
+   * ID of a `Page` (Model) to reference in reason for this fulfillment line.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly reasonReference?: InputMaybe<Scalars['ID']['input']>;
   /** Determines, if the line should be added to replace order. */
   readonly replace?: InputMaybe<Scalars['Boolean']['input']>;
 };
@@ -18073,6 +18431,18 @@ export type OrderReturnLineInput = {
   readonly orderLineId: Scalars['ID']['input'];
   /** The number of items to be returned. */
   readonly quantity: Scalars['Int']['input'];
+  /**
+   * Reason for returning this line.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly reason?: InputMaybe<Scalars['String']['input']>;
+  /**
+   * ID of a `Page` (Model) to reference in reason for this line.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly reasonReference?: InputMaybe<Scalars['ID']['input']>;
   /** Determines, if the line should be added to replace order. */
   readonly replace?: InputMaybe<Scalars['Boolean']['input']>;
 };
@@ -18086,6 +18456,18 @@ export type OrderReturnProductsInput = {
   readonly includeShippingCosts?: InputMaybe<Scalars['Boolean']['input']>;
   /** List of unfulfilled lines to return. */
   readonly orderLines?: InputMaybe<ReadonlyArray<OrderReturnLineInput>>;
+  /**
+   * Reason for returning this order.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly reason?: InputMaybe<Scalars['String']['input']>;
+  /**
+   * ID of a `Page` (Model) to reference in reason for this return.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly reasonReference?: InputMaybe<Scalars['ID']['input']>;
   /** If true, Saleor will call refund action for all lines. */
   readonly refund?: InputMaybe<Scalars['Boolean']['input']>;
 };
@@ -19239,7 +19621,11 @@ export type PasswordLoginModeEnum =
   | 'DISABLED'
   | 'ENABLED';
 
-/** Represents a payment of a given type. */
+/**
+ * Represents a payment of a given type.
+ *
+ * The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+ */
 export type Payment = Node & ObjectWithMetadata & {
   /**
    * List of actions that can be performed in the current state of a payment.
@@ -19322,36 +19708,59 @@ export type Payment = Node & ObjectWithMetadata & {
 };
 
 
-/** Represents a payment of a given type. */
+/**
+ * Represents a payment of a given type.
+ *
+ * The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+ */
 export type PaymentMetafieldArgs = {
   key: Scalars['String']['input'];
 };
 
 
-/** Represents a payment of a given type. */
+/**
+ * Represents a payment of a given type.
+ *
+ * The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+ */
 export type PaymentMetafieldsArgs = {
   keys?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
 };
 
 
-/** Represents a payment of a given type. */
+/**
+ * Represents a payment of a given type.
+ *
+ * The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+ */
 export type PaymentPrivateMetafieldArgs = {
   key: Scalars['String']['input'];
 };
 
 
-/** Represents a payment of a given type. */
+/**
+ * Represents a payment of a given type.
+ *
+ * The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+ */
 export type PaymentPrivateMetafieldsArgs = {
   keys?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
 };
 
-/** Authorize payment. */
+/**
+ * Authorize payment.
+ *
+ * The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+ */
 export type PaymentAuthorize = Event & {
   /** Time of the event. */
   readonly issuedAt?: Maybe<Scalars['DateTime']['output']>;
   /** The user or application that triggered the event. */
   readonly issuingPrincipal?: Maybe<IssuingPrincipal>;
-  /** Look up a payment. */
+  /**
+   * Look up a payment.
+   * @deprecated The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+   */
   readonly payment?: Maybe<Payment>;
   /** The application receiving the webhook. */
   readonly recipient?: Maybe<App>;
@@ -19372,13 +19781,20 @@ export type PaymentCapture = {
   readonly paymentErrors: ReadonlyArray<PaymentError>;
 };
 
-/** Capture payment. */
+/**
+ * Capture payment.
+ *
+ * The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+ */
 export type PaymentCaptureEvent = Event & {
   /** Time of the event. */
   readonly issuedAt?: Maybe<Scalars['DateTime']['output']>;
   /** The user or application that triggered the event. */
   readonly issuingPrincipal?: Maybe<IssuingPrincipal>;
-  /** Look up a payment. */
+  /**
+   * Look up a payment.
+   * @deprecated The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+   */
   readonly payment?: Maybe<Payment>;
   /** The application receiving the webhook. */
   readonly recipient?: Maybe<App>;
@@ -19405,6 +19821,11 @@ export type PaymentCheckBalance = {
   readonly paymentErrors: ReadonlyArray<PaymentError>;
 };
 
+/**
+ * Fields required to check a payment balance.
+ *
+ * The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+ */
 export type PaymentCheckBalanceInput = {
   /** Information about card. */
   readonly card: CardInput;
@@ -19416,13 +19837,20 @@ export type PaymentCheckBalanceInput = {
   readonly method: Scalars['String']['input'];
 };
 
-/** Confirm payment. */
+/**
+ * Confirm payment.
+ *
+ * The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+ */
 export type PaymentConfirmEvent = Event & {
   /** Time of the event. */
   readonly issuedAt?: Maybe<Scalars['DateTime']['output']>;
   /** The user or application that triggered the event. */
   readonly issuingPrincipal?: Maybe<IssuingPrincipal>;
-  /** Look up a payment. */
+  /**
+   * Look up a payment.
+   * @deprecated The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+   */
   readonly payment?: Maybe<Payment>;
   /** The application receiving the webhook. */
   readonly recipient?: Maybe<App>;
@@ -19477,6 +19905,11 @@ export type PaymentErrorCode =
   | 'UNAVAILABLE_VARIANT_IN_CHANNEL'
   | 'UNIQUE';
 
+/**
+ * Filtering options for payments.
+ *
+ * The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+ */
 export type PaymentFilterInput = {
   readonly checkouts?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
   /** Filter by ids. */
@@ -19635,7 +20068,11 @@ export type PaymentInitialize = {
   readonly paymentErrors: ReadonlyArray<PaymentError>;
 };
 
-/** Server-side data generated by a payment gateway. Optional step when the payment provider requires an additional action to initialize payment session. */
+/**
+ * Server-side data generated by a payment gateway. Optional step when the payment provider requires an additional action to initialize payment session.
+ *
+ * The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+ */
 export type PaymentInitialized = {
   /** Initialized data by gateway. */
   readonly data?: Maybe<Scalars['JSONString']['output']>;
@@ -19645,6 +20082,11 @@ export type PaymentInitialized = {
   readonly name: Scalars['String']['output'];
 };
 
+/**
+ * Fields required to create a payment.
+ *
+ * The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+ */
 export type PaymentInput = {
   /** Total amount of the transaction, including all taxes and discounts. If no amount is provided, the checkout total will be used. */
   readonly amount?: InputMaybe<Scalars['PositiveDecimal']['input']>;
@@ -19664,7 +20106,11 @@ export type PaymentInput = {
   readonly token?: InputMaybe<Scalars['String']['input']>;
 };
 
-/** List payment gateways. */
+/**
+ * List payment gateways.
+ *
+ * The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+ */
 export type PaymentListGateways = Event & {
   /** The checkout the event relates to. */
   readonly checkout?: Maybe<Checkout>;
@@ -19872,13 +20318,20 @@ export type PaymentMethodTypeEnumFilterInput = {
   readonly oneOf?: InputMaybe<ReadonlyArray<PaymentMethodTypeEnum>>;
 };
 
-/** Process payment. */
+/**
+ * Process payment.
+ *
+ * The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+ */
 export type PaymentProcessEvent = Event & {
   /** Time of the event. */
   readonly issuedAt?: Maybe<Scalars['DateTime']['output']>;
   /** The user or application that triggered the event. */
   readonly issuingPrincipal?: Maybe<IssuingPrincipal>;
-  /** Look up a payment. */
+  /**
+   * Look up a payment.
+   * @deprecated The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+   */
   readonly payment?: Maybe<Payment>;
   /** The application receiving the webhook. */
   readonly recipient?: Maybe<App>;
@@ -19899,13 +20352,20 @@ export type PaymentRefund = {
   readonly paymentErrors: ReadonlyArray<PaymentError>;
 };
 
-/** Refund payment. */
+/**
+ * Refund payment.
+ *
+ * The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+ */
 export type PaymentRefundEvent = Event & {
   /** Time of the event. */
   readonly issuedAt?: Maybe<Scalars['DateTime']['output']>;
   /** The user or application that triggered the event. */
   readonly issuingPrincipal?: Maybe<IssuingPrincipal>;
-  /** Look up a payment. */
+  /**
+   * Look up a payment.
+   * @deprecated The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+   */
   readonly payment?: Maybe<Payment>;
   /** The application receiving the webhook. */
   readonly recipient?: Maybe<App>;
@@ -19960,7 +20420,11 @@ export type PaymentSettingsInput = {
   readonly releaseFundsForExpiredCheckouts?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
-/** Represents a payment source stored for user in payment gateway, such as credit card. */
+/**
+ * Represents a payment source stored for user in payment gateway, such as credit card.
+ *
+ * The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+ */
 export type PaymentSource = {
   /** Stored credit card details if available. */
   readonly creditCardInfo?: Maybe<CreditCard>;
@@ -19989,13 +20453,20 @@ export type PaymentVoid = {
   readonly paymentErrors: ReadonlyArray<PaymentError>;
 };
 
-/** Void payment. */
+/**
+ * Void payment.
+ *
+ * The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+ */
 export type PaymentVoidEvent = Event & {
   /** Time of the event. */
   readonly issuedAt?: Maybe<Scalars['DateTime']['output']>;
   /** The user or application that triggered the event. */
   readonly issuingPrincipal?: Maybe<IssuingPrincipal>;
-  /** Look up a payment. */
+  /**
+   * Look up a payment.
+   * @deprecated The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+   */
   readonly payment?: Maybe<Payment>;
   /** The application receiving the webhook. */
   readonly recipient?: Maybe<App>;
@@ -24315,12 +24786,14 @@ export type Query = {
    * Look up a payment by ID.
    *
    * Requires one of the following permissions: MANAGE_ORDERS.
+   * @deprecated The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
    */
   readonly payment?: Maybe<Payment>;
   /**
    * List of payments.
    *
    * Requires one of the following permissions: MANAGE_ORDERS.
+   * @deprecated The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
    */
   readonly payments?: Maybe<PaymentCountableConnection>;
   /**
@@ -24380,6 +24853,8 @@ export type Query = {
    * @deprecated Field no longer supported
    */
   readonly reportProductSales?: Maybe<ProductVariantCountableConnection>;
+  /** Returns related settings. Returns `ReturnSettings` configuration, global for the entire shop. */
+  readonly returnSettings: ReturnSettings;
   /**
    * Look up a sale by ID.
    *
@@ -25283,6 +25758,83 @@ export type RequestPasswordReset = {
   /** @deprecated Use `errors` field instead. */
   readonly accountErrors: ReadonlyArray<AccountError>;
   readonly errors: ReadonlyArray<AccountError>;
+};
+
+/**
+ * Updates ReturnSettings. The `Page` (Model) Type will be cleared from `reasonReferenceType`. When it's cleared, passing reason reference to return mutations is no longer accepted and will raise error.
+ *
+ * Added in Saleor 3.23.
+ *
+ * Requires one of the following permissions: MANAGE_SETTINGS.
+ */
+export type ReturnReasonReferenceTypeClear = {
+  readonly errors: ReadonlyArray<ReturnReasonReferenceTypeClearError>;
+  /** Return settings. */
+  readonly returnSettings?: Maybe<ReturnSettings>;
+  /** @deprecated Use `errors` field instead. */
+  readonly returnSettingsErrors: ReadonlyArray<ReturnReasonReferenceTypeClearError>;
+};
+
+export type ReturnReasonReferenceTypeClearError = {
+  /** Failed to clear return reason reference type */
+  readonly code: ReturnSettingsErrorCode;
+  /** Name of a field that caused the error. A value of `null` indicates that the error isn't associated with a particular field. */
+  readonly field?: Maybe<Scalars['String']['output']>;
+  /** The error message. */
+  readonly message?: Maybe<Scalars['String']['output']>;
+};
+
+/**
+ * Return related settings from site settings.
+ *
+ * Added in Saleor 3.23.
+ */
+export type ReturnSettings = {
+  /**
+   * Model type used for return reasons.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly reasonReferenceType?: Maybe<PageType>;
+};
+
+export type ReturnSettingsErrorCode =
+  | 'GRAPHQL_ERROR'
+  | 'INVALID'
+  | 'NOT_FOUND'
+  | 'REQUIRED';
+
+/**
+ * Update return settings across all channels.
+ *
+ * Added in Saleor 3.23.
+ *
+ * Requires one of the following permissions: MANAGE_SETTINGS.
+ */
+export type ReturnSettingsUpdate = {
+  readonly errors: ReadonlyArray<ReturnSettingsUpdateError>;
+  /** Return settings. */
+  readonly returnSettings?: Maybe<ReturnSettings>;
+  /** @deprecated Use `errors` field instead. */
+  readonly returnSettingsErrors: ReadonlyArray<ReturnSettingsUpdateError>;
+};
+
+export type ReturnSettingsUpdateError = {
+  /** Failed to update Return Settings */
+  readonly code: ReturnSettingsErrorCode;
+  /** Name of a field that caused the error. A value of `null` indicates that the error isn't associated with a particular field. */
+  readonly field?: Maybe<Scalars['String']['output']>;
+  /** The error message. */
+  readonly message?: Maybe<Scalars['String']['output']>;
+};
+
+export type ReturnSettingsUpdateInput = {
+  /**
+   * The ID of a model type, that will be used to reference return reasons. All models of this type will be accepted as return reasons.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly returnReasonReferenceType: Scalars['ID']['input'];
 };
 
 export type RewardTypeEnum =
@@ -26768,9 +27320,18 @@ export type Shop = ObjectWithMetadata & {
    * Requires one of the following permissions: MANAGE_SETTINGS.
    */
   readonly allowLoginWithoutConfirmation?: Maybe<Scalars['Boolean']['output']>;
+  /**
+   * List of announcements for this shop.
+   *
+   * Requires one of the following permissions: AUTHENTICATED_STAFF_USER.
+   */
+  readonly announcements: ReadonlyArray<Announcement>;
   /** List of available external authentications. */
   readonly availableExternalAuthentications: ReadonlyArray<ExternalAuthentication>;
-  /** List of available payment gateways. */
+  /**
+   * List of available payment gateways.
+   * @deprecated The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+   */
   readonly availablePaymentGateways: ReadonlyArray<PaymentGateway>;
   /** Shipping methods that are available for the shop. */
   readonly availableShippingMethods?: Maybe<ReadonlyArray<ShippingMethod>>;
@@ -27110,6 +27671,12 @@ export type ShopSettingsInput = {
    * Warning: never store sensitive information, including financial data such as credit card details.
    */
   readonly metadata?: InputMaybe<ReadonlyArray<MetadataInput>>;
+  /**
+   * Shop's name.
+   *
+   * Added in Saleor 3.23.
+   */
+  readonly name?: InputMaybe<Scalars['String']['input']>;
   /**
    * Controls whether password-based authentication is allowed.
    *
@@ -28689,7 +29256,11 @@ export type TimePeriodTypeEnum =
 export type TokenizedPaymentFlowEnum =
   | 'INTERACTIVE';
 
-/** An object representing a single payment. */
+/**
+ * An object representing a single payment.
+ *
+ * The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+ */
 export type Transaction = Node & {
   /** Total amount of the transaction. */
   readonly amount?: Maybe<Money>;
@@ -28699,7 +29270,7 @@ export type Transaction = Node & {
   readonly error?: Maybe<Scalars['String']['output']>;
   /**
    * Response returned by payment gateway.
-   * @deprecated This field is a part of a legacy Payments API. Please use apps instead.
+   * @deprecated The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
    */
   readonly gatewayResponse: Scalars['JSONString']['output'];
   /** ID of the transaction. */
@@ -29708,7 +30279,10 @@ export type User = Node & ObjectWithMetadata & {
   readonly restrictedAccessToChannels: Scalars['Boolean']['output'];
   /** Returns a list of user's stored payment methods that can be used in provided channel. The field returns a list of stored payment methods by payment apps. When `amount` is not provided, 0 will be used as default value. */
   readonly storedPaymentMethods?: Maybe<ReadonlyArray<StoredPaymentMethod>>;
-  /** List of stored payment sources. The field returns a list of payment sources stored for payment plugins. */
+  /**
+   * List of stored payment sources. The field returns a list of payment sources stored for payment plugins.
+   * @deprecated The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+   */
   readonly storedPaymentSources?: Maybe<ReadonlyArray<PaymentSource>>;
   /** The data when the user last update the account information. */
   readonly updatedAt: Scalars['DateTime']['output'];

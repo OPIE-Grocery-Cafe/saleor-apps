@@ -267,6 +267,11 @@ type Query {
   refundSettings: RefundSettings! @doc(category: "Shop")
 
   """
+  Returns related settings. Returns `ReturnSettings` configuration, global for the entire shop.
+  """
+  returnSettings: ReturnSettings! @doc(category: "Shop")
+
+  """
   Look up a shipping zone by ID.
   
   Requires one of the following permissions: MANAGE_SHIPPING.
@@ -597,7 +602,7 @@ type Query {
   payment(
     """ID of the payment."""
     id: ID!
-  ): Payment @doc(category: "Payments")
+  ): Payment @doc(category: "Payments") @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """
   List of payments.
@@ -623,7 +628,7 @@ type Query {
     Retrieve the last n elements from the list. Note that the system only allows fetching a maximum of 100 objects in a single query.
     """
     last: Int
-  ): PaymentCountableConnection @doc(category: "Payments")
+  ): PaymentCountableConnection @doc(category: "Payments") @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """
   Look up a transaction by ID.
@@ -2212,7 +2217,7 @@ enum WebhookEventTypeEnum @doc(category: "Webhooks") {
   VOUCHER_CODE_EXPORT_COMPLETED
 
   """An observability event is created."""
-  OBSERVABILITY
+  OBSERVABILITY @deprecated(reason: "The observability feature is no longer supported. This event will be removed in Saleor 3.24.")
 
   """A thumbnail is created."""
   THUMBNAIL_CREATED
@@ -2221,25 +2226,25 @@ enum WebhookEventTypeEnum @doc(category: "Webhooks") {
   SHOP_METADATA_UPDATED
 
   """Listing available payment gateways."""
-  PAYMENT_LIST_GATEWAYS
+  PAYMENT_LIST_GATEWAYS @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """Authorize payment."""
-  PAYMENT_AUTHORIZE
+  PAYMENT_AUTHORIZE @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """Capture payment."""
-  PAYMENT_CAPTURE
+  PAYMENT_CAPTURE @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """Refund payment."""
-  PAYMENT_REFUND
+  PAYMENT_REFUND @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """Void payment."""
-  PAYMENT_VOID
+  PAYMENT_VOID @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """Confirm payment."""
-  PAYMENT_CONFIRM
+  PAYMENT_CONFIRM @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """Process payment."""
-  PAYMENT_PROCESS
+  PAYMENT_PROCESS @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """Event called for checkout tax calculation."""
   CHECKOUT_CALCULATE_TAXES
@@ -2286,25 +2291,25 @@ type WebhookEventSync @doc(category: "Webhooks") {
 """Enum determining type of webhook."""
 enum WebhookEventTypeSyncEnum @doc(category: "Webhooks") {
   """Listing available payment gateways."""
-  PAYMENT_LIST_GATEWAYS
+  PAYMENT_LIST_GATEWAYS @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """Authorize payment."""
-  PAYMENT_AUTHORIZE
+  PAYMENT_AUTHORIZE @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """Capture payment."""
-  PAYMENT_CAPTURE
+  PAYMENT_CAPTURE @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """Refund payment."""
-  PAYMENT_REFUND
+  PAYMENT_REFUND @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """Void payment."""
-  PAYMENT_VOID
+  PAYMENT_VOID @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """Confirm payment."""
-  PAYMENT_CONFIRM
+  PAYMENT_CONFIRM @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """Process payment."""
-  PAYMENT_PROCESS
+  PAYMENT_PROCESS @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """Event called for checkout tax calculation."""
   CHECKOUT_CALCULATE_TAXES
@@ -2816,7 +2821,7 @@ enum WebhookEventTypeAsyncEnum @doc(category: "Webhooks") {
   VOUCHER_CODE_EXPORT_COMPLETED
 
   """An observability event is created."""
-  OBSERVABILITY
+  OBSERVABILITY @deprecated(reason: "The observability feature is no longer supported. This event will be removed in Saleor 3.24.")
 
   """A thumbnail is created."""
   THUMBNAIL_CREATED
@@ -3029,7 +3034,7 @@ enum PermissionEnum @doc(category: "Users") {
   MANAGE_STAFF
   IMPERSONATE_USER
   MANAGE_APPS
-  MANAGE_OBSERVABILITY
+  MANAGE_OBSERVABILITY @deprecated(reason: "The observability feature is no longer supported. This permission will be removed in Saleor 3.24.")
   MANAGE_CHECKOUTS
   HANDLE_CHECKOUTS
   HANDLE_TAXES
@@ -3117,6 +3122,13 @@ type AppExtension implements Node @doc(category: "Apps") {
   Added in Saleor 3.22.
   """
   settings: JSON!
+
+  """
+  Extension identifier, unique per app. Null when the app does not declare one.
+  
+  Added in Saleor 3.23.
+  """
+  identifier: String
 
   """The app assigned to app extension."""
   app: App!
@@ -3423,7 +3435,7 @@ type User implements Node & ObjectWithMetadata @doc(category: "Users") {
   storedPaymentSources(
     """Slug of a channel for which the data should be returned."""
     channel: String
-  ): [PaymentSource!]
+  ): [PaymentSource!] @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """User language code."""
   languageCode: LanguageCodeEnum!
@@ -3680,7 +3692,7 @@ type Checkout implements Node & ObjectWithMetadata @doc(category: "Checkout") {
   Triggers the following webhook events:
   - PAYMENT_LIST_GATEWAYS (sync): Fetch payment gateways available for checkout.
   """
-  availablePaymentGateways: [PaymentGateway!]! @webhookEventsInfo(asyncEvents: [], syncEvents: [PAYMENT_LIST_GATEWAYS])
+  availablePaymentGateways: [PaymentGateway!]! @webhookEventsInfo(asyncEvents: [], syncEvents: [PAYMENT_LIST_GATEWAYS]) @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """Email of a customer."""
   email: String
@@ -10714,7 +10726,7 @@ Determine the mark as paid strategy for the channel.
 """
 enum MarkAsPaidStrategyEnum @doc(category: "Channels") {
   TRANSACTION_FLOW
-  PAYMENT_FLOW
+  PAYMENT_FLOW @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 }
 
 """The `Day` scalar type represents number of days by integer value."""
@@ -11355,6 +11367,24 @@ type GiftCard implements Node & ObjectWithMetadata @doc(category: "Gift cards") 
   """Email address of the customer who used a gift card."""
   usedByEmail: String @deprecated
 
+  """
+  The customer the gift card usage is restricted to.
+  
+  Requires one of the following permissions: MANAGE_USERS, OWNER. 
+  
+  Added in Saleor 3.23.
+  """
+  assignedTo: User
+
+  """
+  Email of the customer the gift card is restricted to.
+  
+  Requires one of the following permissions: MANAGE_GIFT_CARD, OWNER. 
+  
+  Added in Saleor 3.23.
+  """
+  assignedToEmail: String
+
   """Date and time when gift card was last used."""
   lastUsedOn: DateTime
 
@@ -11446,6 +11476,13 @@ type GiftCardEvent implements Node @doc(category: "Gift cards") {
   """The gift card balance."""
   balance: GiftCardEventBalance
 
+  """
+  The customer assignment change recorded by the event. Only set for ASSIGNED_TO_USER and UNASSIGNED_FROM_USER events. 
+  
+  Added in Saleor 3.23.
+  """
+  assignedTo: GiftCardEventAssignment
+
   """The gift card expiry date."""
   expiryDate: Date
 
@@ -11467,6 +11504,9 @@ enum GiftCardEventsEnum @doc(category: "Gift cards") {
   NOTE_ADDED
   USED_IN_ORDER
   REFUNDED_IN_ORDER
+  BALANCE_ADJUSTED
+  ASSIGNED_TO_USER
+  UNASSIGNED_FROM_USER
 }
 
 type GiftCardEventBalance @doc(category: "Gift cards") {
@@ -11481,6 +11521,28 @@ type GiftCardEventBalance @doc(category: "Gift cards") {
 
   """Previous current balance of the gift card."""
   oldCurrentBalance: Money
+}
+
+type GiftCardEventAssignment @doc(category: "Gift cards") {
+  """
+  The customer the gift card was assigned to before this event. 
+  
+  Requires one of the following permissions: MANAGE_USERS, MANAGE_STAFF, OWNER.
+  """
+  oldAssignedTo: User
+
+  """
+  The customer the gift card is assigned to after this event. 
+  
+  Requires one of the following permissions: MANAGE_USERS, MANAGE_STAFF, OWNER.
+  """
+  currentAssignedTo: User
+
+  """Email of the customer the gift card was assigned to before this event."""
+  oldAssignedToEmail: String
+
+  """Email of the customer the gift card is assigned to after this event."""
+  currentAssignedToEmail: String
 }
 
 input GiftCardEventFilterInput @doc(category: "Gift cards") {
@@ -11588,6 +11650,15 @@ type CheckoutLine implements Node & ObjectWithMetadata @doc(category: "Checkout"
   Note: this API is currently in Feature Preview and can be subject to changes at later point.
   """
   isGift: Boolean
+
+  """
+  Reason explaining why a custom price was set on the line, provided by the app that set the price override.
+  
+  Added in Saleor 3.23.
+  
+  Requires one of the following permissions: MANAGE_CHECKOUTS, HANDLE_CHECKOUTS.
+  """
+  priceOverrideReason: String
 }
 
 """Represents an problem in the checkout line."""
@@ -11901,7 +11972,7 @@ type Order implements Node & ObjectWithMetadata @doc(category: "Orders") {
   transactions: [TransactionItem!]!
 
   """List of payments for the order."""
-  payments: [Payment!]!
+  payments: [Payment!]! @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """Total amount of the order."""
   total: TaxedMoney!
@@ -12164,6 +12235,20 @@ type Fulfillment implements Node & ObjectWithMetadata @doc(category: "Orders") {
 
   """Total refunded amount assigned to this fulfillment."""
   totalRefundedAmount: Money
+
+  """
+  Reason for returning this fulfillment.
+  
+  Added in Saleor 3.23.
+  """
+  reason: String
+
+  """
+  Reason Model (Page) reference for this fulfillment.
+  
+  Added in Saleor 3.23.
+  """
+  reasonReference: Page
 }
 
 enum FulfillmentStatus @doc(category: "Orders") {
@@ -12186,6 +12271,20 @@ type FulfillmentLine implements Node @doc(category: "Orders") {
 
   """The order line to which the fulfillment line is related."""
   orderLine: OrderLine
+
+  """
+  Reason for returning this fulfillment line.
+  
+  Added in Saleor 3.23.
+  """
+  reason: String
+
+  """
+  Reason Model (Page) reference for this fulfillment line.
+  
+  Added in Saleor 3.23.
+  """
+  reasonReference: Page
 }
 
 """Represents order line of particular order."""
@@ -12296,6 +12395,15 @@ type OrderLine implements Node & ObjectWithMetadata @doc(category: "Orders") {
 
   """Returns True, if the line unit price was overridden."""
   isPriceOverridden: Boolean
+
+  """
+  Reason explaining why a custom price was set on the line, copied from the checkout line when the order was created from a checkout.
+  
+  Added in Saleor 3.23.
+  
+  Requires one of the following permissions: MANAGE_ORDERS.
+  """
+  priceOverrideReason: String
 
   """
   A purchased product variant. Note: this field may be null if the variant has been removed from stock at all. Requires one of the following permissions to include the unpublished items: MANAGE_ORDERS, MANAGE_DISCOUNTS, MANAGE_PRODUCTS.
@@ -12430,18 +12538,227 @@ enum OrderDiscountType @doc(category: "Discounts") {
   ORDER_PROMOTION
 }
 
+"""
+A static page that can be manually added by a shop operator through the dashboard.
+"""
+type Page implements Node & ObjectWithMetadata & ObjectWithAttributes @doc(category: "Pages") {
+  """ID of the page."""
+  id: ID!
+
+  """List of private metadata items. Requires staff permissions to access."""
+  privateMetadata: [MetadataItem!]!
+
+  """
+  A single key from private metadata. Requires staff permissions to access.
+  
+  Tip: Use GraphQL aliases to fetch multiple keys.
+  """
+  privateMetafield(key: String!): String
+
+  """
+  Private metadata. Requires staff permissions to access. Use `keys` to control which fields you want to include. The default is to include everything.
+  """
+  privateMetafields(keys: [String!]): Metadata
+
+  """List of public metadata items. Can be accessed without permissions."""
+  metadata: [MetadataItem!]!
+
+  """
+  A single key from public metadata.
+  
+  Tip: Use GraphQL aliases to fetch multiple keys.
+  """
+  metafield(key: String!): String
+
+  """
+  Public metadata. Use `keys` to control which fields you want to include. The default is to include everything.
+  """
+  metafields(keys: [String!]): Metadata
+
+  """
+  Get a single attribute attached to page by attribute slug.
+  
+  Added in Saleor 3.22.
+  """
+  assignedAttribute(
+    """Slug of the attribute"""
+    slug: String!
+  ): AssignedAttribute
+
+  """
+  List of attributes assigned to this page.
+  
+  Added in Saleor 3.22.
+  """
+  assignedAttributes(
+    """Maximum number of attributes to return. Default is 100."""
+    limit: PositiveInt = 100
+  ): [AssignedAttribute!]!
+
+  """Title of the page for SEO."""
+  seoTitle: String
+
+  """Description of the page for SEO."""
+  seoDescription: String
+
+  """Title of the page."""
+  title: String!
+
+  """
+  Content of the page.
+  
+  Rich text format. For reference see https://editorjs.io/
+  """
+  content: JSONString
+  publicationDate: Date @deprecated(reason: "Use the `publishedAt` field to fetch the publication date.")
+
+  """The page publication date."""
+  publishedAt: DateTime
+
+  """Determines if the page is published."""
+  isPublished: Boolean!
+
+  """Slug of the page."""
+  slug: String!
+
+  """Determines the type of page"""
+  pageType: PageType!
+
+  """Date and time at which page was created."""
+  created: DateTime!
+
+  """
+  Content of the page.
+  
+  Rich text format. For reference see https://editorjs.io/
+  """
+  contentJson: JSONString! @deprecated(reason: "Use the `content` field instead.")
+
+  """Returns translated page fields for the given language code."""
+  translation(
+    """A language code to return the translation for page."""
+    languageCode: LanguageCodeEnum!
+  ): PageTranslation
+
+  """Get a single attribute attached to page by attribute slug."""
+  attribute(
+    """Slug of the attribute"""
+    slug: String!
+  ): SelectedAttribute @deprecated(reason: "Use `assignedAttribute` field instead.")
+
+  """List of attributes assigned to this page."""
+  attributes: [SelectedAttribute!]! @deprecated(reason: "Use `assignedAttributes` field instead.")
+}
+
+"""Represents page translations."""
+type PageTranslation implements Node @doc(category: "Pages") {
+  """The ID of the page translation."""
+  id: ID!
+
+  """Translation language."""
+  language: LanguageDisplay!
+
+  """Translated SEO title."""
+  seoTitle: String
+
+  """Translated SEO description."""
+  seoDescription: String
+
+  """
+  Translated page slug.
+  
+  Added in Saleor 3.21.
+  """
+  slug: String
+
+  """Translated page title."""
+  title: String
+
+  """
+  Translated content of the page.
+  
+  Rich text format. For reference see https://editorjs.io/
+  """
+  content: JSONString
+
+  """
+  Translated description of the page.
+  
+  Rich text format. For reference see https://editorjs.io/
+  """
+  contentJson: JSONString @deprecated(reason: "Use the `content` field instead.")
+
+  """Represents the page fields to translate."""
+  translatableContent: PageTranslatableContent
+}
+
+"""
+Represents page's original translatable fields and related translations.
+"""
+type PageTranslatableContent implements Node @doc(category: "Pages") {
+  """The ID of the page translatable content."""
+  id: ID!
+
+  """The ID of the page to translate."""
+  pageId: ID!
+
+  """SEO title to translate."""
+  seoTitle: String
+
+  """SEO description to translate."""
+  seoDescription: String
+
+  """
+  Slug to translate.
+  
+  Added in Saleor 3.21.
+  """
+  slug: String
+
+  """Page title to translate."""
+  title: String!
+
+  """
+  Content of the page to translate.
+  
+  Rich text format. For reference see https://editorjs.io/
+  """
+  content: JSONString
+
+  """
+  Content of the page.
+  
+  Rich text format. For reference see https://editorjs.io/
+  """
+  contentJson: JSONString @deprecated(reason: "Use the `content` field instead.")
+
+  """Returns translated page fields for the given language code."""
+  translation(
+    """A language code to return the translation for page."""
+    languageCode: LanguageCodeEnum!
+  ): PageTranslation
+
+  """
+  A static page that can be manually added by a shop operator through the dashboard.
+  """
+  page: Page @deprecated(reason: "Get model fields from the root level queries.")
+
+  """List of page content attribute values that can be translated."""
+  attributeValues: [AttributeValueTranslatableContent!]!
+}
+
 enum OrderAction @doc(category: "Payments") {
   """Represents the capture action."""
-  CAPTURE
+  CAPTURE @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """Represents a mark-as-paid action."""
   MARK_AS_PAID
 
   """Represents a refund action."""
-  REFUND
+  REFUND @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """Represents a void action."""
-  VOID
+  VOID @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 }
 
 """Represents an Invoice."""
@@ -12592,7 +12909,11 @@ enum OrderChargeStatusEnum @doc(category: "Orders") {
   OVERCHARGED
 }
 
-"""Represents a payment of a given type."""
+"""
+Represents a payment of a given type.
+
+The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+"""
 type Payment implements Node & ObjectWithMetadata @doc(category: "Payments") {
   """ID of the payment."""
   id: ID!
@@ -12702,7 +13023,11 @@ type Payment implements Node & ObjectWithMetadata @doc(category: "Payments") {
   pspReference: String
 }
 
-"""An object representing a single payment."""
+"""
+An object representing a single payment.
+
+The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+"""
 type Transaction implements Node @doc(category: "Payments") {
   """ID of the transaction."""
   id: ID!
@@ -12726,23 +13051,23 @@ type Transaction implements Node @doc(category: "Payments") {
   error: String
 
   """Response returned by payment gateway."""
-  gatewayResponse: JSONString! @deprecated(reason: "This field is a part of a legacy Payments API. Please use apps instead.")
+  gatewayResponse: JSONString! @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """Total amount of the transaction."""
   amount: Money
 }
 
 enum TransactionKind @doc(category: "Payments") {
-  EXTERNAL
-  AUTH
-  PENDING
-  ACTION_TO_CONFIRM
-  REFUND
-  REFUND_ONGOING
-  CAPTURE
-  VOID
-  CONFIRM
-  CANCEL
+  EXTERNAL @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
+  AUTH @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
+  PENDING @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
+  ACTION_TO_CONFIRM @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
+  REFUND @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
+  REFUND_ONGOING @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
+  CAPTURE @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
+  VOID @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
+  CONFIRM @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
+  CANCEL @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 }
 
 type CreditCard @doc(category: "Payments") {
@@ -13118,215 +13443,6 @@ type OrderGrantedRefund @doc(category: "Orders") {
   transaction: TransactionItem
 }
 
-"""
-A static page that can be manually added by a shop operator through the dashboard.
-"""
-type Page implements Node & ObjectWithMetadata & ObjectWithAttributes @doc(category: "Pages") {
-  """ID of the page."""
-  id: ID!
-
-  """List of private metadata items. Requires staff permissions to access."""
-  privateMetadata: [MetadataItem!]!
-
-  """
-  A single key from private metadata. Requires staff permissions to access.
-  
-  Tip: Use GraphQL aliases to fetch multiple keys.
-  """
-  privateMetafield(key: String!): String
-
-  """
-  Private metadata. Requires staff permissions to access. Use `keys` to control which fields you want to include. The default is to include everything.
-  """
-  privateMetafields(keys: [String!]): Metadata
-
-  """List of public metadata items. Can be accessed without permissions."""
-  metadata: [MetadataItem!]!
-
-  """
-  A single key from public metadata.
-  
-  Tip: Use GraphQL aliases to fetch multiple keys.
-  """
-  metafield(key: String!): String
-
-  """
-  Public metadata. Use `keys` to control which fields you want to include. The default is to include everything.
-  """
-  metafields(keys: [String!]): Metadata
-
-  """
-  Get a single attribute attached to page by attribute slug.
-  
-  Added in Saleor 3.22.
-  """
-  assignedAttribute(
-    """Slug of the attribute"""
-    slug: String!
-  ): AssignedAttribute
-
-  """
-  List of attributes assigned to this page.
-  
-  Added in Saleor 3.22.
-  """
-  assignedAttributes(
-    """Maximum number of attributes to return. Default is 100."""
-    limit: PositiveInt = 100
-  ): [AssignedAttribute!]!
-
-  """Title of the page for SEO."""
-  seoTitle: String
-
-  """Description of the page for SEO."""
-  seoDescription: String
-
-  """Title of the page."""
-  title: String!
-
-  """
-  Content of the page.
-  
-  Rich text format. For reference see https://editorjs.io/
-  """
-  content: JSONString
-  publicationDate: Date @deprecated(reason: "Use the `publishedAt` field to fetch the publication date.")
-
-  """The page publication date."""
-  publishedAt: DateTime
-
-  """Determines if the page is published."""
-  isPublished: Boolean!
-
-  """Slug of the page."""
-  slug: String!
-
-  """Determines the type of page"""
-  pageType: PageType!
-
-  """Date and time at which page was created."""
-  created: DateTime!
-
-  """
-  Content of the page.
-  
-  Rich text format. For reference see https://editorjs.io/
-  """
-  contentJson: JSONString! @deprecated(reason: "Use the `content` field instead.")
-
-  """Returns translated page fields for the given language code."""
-  translation(
-    """A language code to return the translation for page."""
-    languageCode: LanguageCodeEnum!
-  ): PageTranslation
-
-  """Get a single attribute attached to page by attribute slug."""
-  attribute(
-    """Slug of the attribute"""
-    slug: String!
-  ): SelectedAttribute @deprecated(reason: "Use `assignedAttribute` field instead.")
-
-  """List of attributes assigned to this page."""
-  attributes: [SelectedAttribute!]! @deprecated(reason: "Use `assignedAttributes` field instead.")
-}
-
-"""Represents page translations."""
-type PageTranslation implements Node @doc(category: "Pages") {
-  """The ID of the page translation."""
-  id: ID!
-
-  """Translation language."""
-  language: LanguageDisplay!
-
-  """Translated SEO title."""
-  seoTitle: String
-
-  """Translated SEO description."""
-  seoDescription: String
-
-  """
-  Translated page slug.
-  
-  Added in Saleor 3.21.
-  """
-  slug: String
-
-  """Translated page title."""
-  title: String
-
-  """
-  Translated content of the page.
-  
-  Rich text format. For reference see https://editorjs.io/
-  """
-  content: JSONString
-
-  """
-  Translated description of the page.
-  
-  Rich text format. For reference see https://editorjs.io/
-  """
-  contentJson: JSONString @deprecated(reason: "Use the `content` field instead.")
-
-  """Represents the page fields to translate."""
-  translatableContent: PageTranslatableContent
-}
-
-"""
-Represents page's original translatable fields and related translations.
-"""
-type PageTranslatableContent implements Node @doc(category: "Pages") {
-  """The ID of the page translatable content."""
-  id: ID!
-
-  """The ID of the page to translate."""
-  pageId: ID!
-
-  """SEO title to translate."""
-  seoTitle: String
-
-  """SEO description to translate."""
-  seoDescription: String
-
-  """
-  Slug to translate.
-  
-  Added in Saleor 3.21.
-  """
-  slug: String
-
-  """Page title to translate."""
-  title: String!
-
-  """
-  Content of the page to translate.
-  
-  Rich text format. For reference see https://editorjs.io/
-  """
-  content: JSONString
-
-  """
-  Content of the page.
-  
-  Rich text format. For reference see https://editorjs.io/
-  """
-  contentJson: JSONString @deprecated(reason: "Use the `content` field instead.")
-
-  """Returns translated page fields for the given language code."""
-  translation(
-    """A language code to return the translation for page."""
-    languageCode: LanguageCodeEnum!
-  ): PageTranslation
-
-  """
-  A static page that can be manually added by a shop operator through the dashboard.
-  """
-  page: Page @deprecated(reason: "Get model fields from the root level queries.")
-
-  """List of page content attribute values that can be translated."""
-  attributeValues: [AttributeValueTranslatableContent!]!
-}
-
 """Represents granted refund line."""
 type OrderGrantedRefundLine {
   id: ID!
@@ -13339,6 +13455,13 @@ type OrderGrantedRefundLine {
 
   """Reason for refunding the line."""
   reason: String
+
+  """
+  Reason Model (Page) reference for this refund line.
+  
+  Added in Saleor 3.23.
+  """
+  reasonReference: Page
 }
 
 """
@@ -13899,6 +14022,8 @@ enum CustomerEventsEnum @doc(category: "Users") {
 
 """
 Represents a payment source stored for user in payment gateway, such as credit card.
+
+The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
 """
 type PaymentSource @doc(category: "Payments") {
   """Payment gateway name."""
@@ -14213,7 +14338,7 @@ enum WebhookSampleEventTypeEnum @doc(category: "Webhooks") {
   CHECKOUT_FULLY_AUTHORIZED
   CHECKOUT_FULLY_PAID
   CHECKOUT_METADATA_UPDATED
-  NOTIFY_USER
+  NOTIFY_USER @deprecated(reason: "See the docs for more details about migrating from NOTIFY_USER to other events: https://docs.saleor.io/upgrade-guides/core/3-16-to-3-17#migrating-from-notify_user")
   PAGE_CREATED
   PAGE_UPDATED
   PAGE_DELETED
@@ -14248,7 +14373,7 @@ enum WebhookSampleEventTypeEnum @doc(category: "Webhooks") {
   VOUCHER_CODES_DELETED
   VOUCHER_METADATA_UPDATED
   VOUCHER_CODE_EXPORT_COMPLETED
-  OBSERVABILITY
+  OBSERVABILITY @deprecated(reason: "The observability feature is no longer supported. This event will be removed in Saleor 3.24.")
   THUMBNAIL_CREATED
   SHOP_METADATA_UPDATED
 }
@@ -14941,7 +15066,7 @@ type Shop implements ObjectWithMetadata {
 
     """Slug of a channel for which the data should be returned."""
     channel: String
-  ): [PaymentGateway!]!
+  ): [PaymentGateway!]! @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """List of available external authentications."""
   availableExternalAuthentications: [ExternalAuthentication!]!
@@ -15083,6 +15208,13 @@ type Shop implements ObjectWithMetadata {
   Requires one of the following permissions: AUTHENTICATED_STAFF_USER.
   """
   limits: LimitInfo! @deprecated
+
+  """
+  List of announcements for this shop.
+  
+  Requires one of the following permissions: AUTHENTICATED_STAFF_USER.
+  """
+  announcements: [Announcement!]!
 
   """
   Saleor API version.
@@ -15229,6 +15361,43 @@ type Limits {
   warehouses: Int
 }
 
+"""Lists current announcements that the user should see."""
+type Announcement {
+  """The date & time at which this announcement was created."""
+  createdAt: DateTime!
+
+  """The date & time at which this announcement was last updated."""
+  updatedAt: DateTime!
+
+  """The announcement's title."""
+  title: String!
+
+  """The announcement's description, may contain HTML formatting."""
+  messageHtml: String!
+
+  """
+  Determine the how critical the announcement is. UNSET if no severity level was defined for this announcement.
+  """
+  importance: AnnouncementImportanceEnum!
+
+  """
+  The announcement's type, for example "CUSTOM". Used to programatically distinguish between message types thus allowing to render the message differently, and allows to know the expected shape for the `extra` field.
+  """
+  type: String!
+
+  """Additional information about this announcement."""
+  extra: Metadata!
+}
+
+"""Defines a shop-level announcement's level/severity."""
+enum AnnouncementImportanceEnum @doc(category: "Shop") {
+  CRITICAL
+  HIGH
+  MODERATE
+  LOW
+  UNSET
+}
+
 """
 Controls whether password-based authentication is allowed.
 
@@ -15280,6 +15449,20 @@ Added in Saleor 3.22.
 """
 type RefundSettings @doc(category: "Orders") {
   """Model type used for refund reasons."""
+  reasonReferenceType: PageType
+}
+
+"""
+Return related settings from site settings.
+
+Added in Saleor 3.23.
+"""
+type ReturnSettings @doc(category: "Orders") {
+  """
+  Model type used for return reasons.
+  
+  Added in Saleor 3.23.
+  """
   reasonReferenceType: PageType
 }
 
@@ -15456,6 +15639,11 @@ type PaymentCountableEdge @doc(category: "Payments") {
   cursor: String!
 }
 
+"""
+Filtering options for payments.
+
+The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+"""
 input PaymentFilterInput @doc(category: "Payments") {
   """Filter by ids."""
   ids: [ID!]
@@ -15736,7 +15924,7 @@ enum OrderSortField @doc(category: "Orders") {
   CUSTOMER
 
   """Sort orders by payment status."""
-  PAYMENT
+  PAYMENT @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """Sort orders by fulfillment status."""
   FULFILLMENT_STATUS @deprecated(reason: "Use `STATUS` instead.")
@@ -15750,7 +15938,8 @@ enum OrderSortField @doc(category: "Orders") {
 }
 
 input OrderFilterInput @doc(category: "Orders") {
-  paymentStatus: [PaymentChargeStatusEnum!]
+  """Filter orders by payment charge status."""
+  paymentStatus: [PaymentChargeStatusEnum!] @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
   status: [OrderStatusFilter!]
   customer: String
   created: DateRangeInput
@@ -16189,7 +16378,16 @@ input GiftCardFilterInput @doc(category: "Gift cards") {
   metadata: [MetadataFilter!]
   tags: [String!]
   products: [ID!]
-  usedBy: [ID!]
+
+  """Filter by the customer who used a gift card."""
+  usedBy: [ID!] @deprecated
+
+  """
+  Filter by the customer the gift card usage is restricted to.
+  
+  Added in Saleor 3.23.
+  """
+  assignedTo: [ID!]
   used: Boolean
   currency: String
   currentBalance: PriceRangeInput
@@ -17014,7 +17212,7 @@ enum CheckoutSortField @doc(category: "Checkout") {
   CUSTOMER
 
   """Sort checkouts by payment."""
-  PAYMENT
+  PAYMENT @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """
   Sort checkouts by rank. Note: This option is available only with the `search` filter.
@@ -17806,6 +18004,27 @@ type Mutation {
   Requires one of the following permissions: MANAGE_SETTINGS.
   """
   refundReasonReferenceClear: RefundReasonReferenceTypeClear @doc(category: "Orders")
+
+  """
+  Update return settings across all channels.
+  
+  Added in Saleor 3.23. 
+  
+  Requires one of the following permissions: MANAGE_SETTINGS.
+  """
+  returnSettingsUpdate(
+    """Fields required to update return settings."""
+    input: ReturnSettingsUpdateInput!
+  ): ReturnSettingsUpdate @doc(category: "Shop")
+
+  """
+  Updates ReturnSettings. The `Page` (Model) Type will be cleared from `reasonReferenceType`. When it's cleared, passing reason reference to return mutations is no longer accepted and will raise error.
+  
+  Added in Saleor 3.23. 
+  
+  Requires one of the following permissions: MANAGE_SETTINGS.
+  """
+  returnReasonReferenceClear: ReturnReasonReferenceTypeClear @doc(category: "Orders")
 
   """
   Calculates available delivery options for a checkout.
@@ -18725,7 +18944,7 @@ type Mutation {
 
     """Payment ID."""
     paymentId: ID!
-  ): PaymentCapture @doc(category: "Payments")
+  ): PaymentCapture @doc(category: "Payments") @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """
   Refunds the captured payment amount. 
@@ -18738,7 +18957,7 @@ type Mutation {
 
     """Payment ID."""
     paymentId: ID!
-  ): PaymentRefund @doc(category: "Payments")
+  ): PaymentRefund @doc(category: "Payments") @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """
   Voids the authorized payment. 
@@ -18748,7 +18967,7 @@ type Mutation {
   paymentVoid(
     """Payment ID."""
     paymentId: ID!
-  ): PaymentVoid @doc(category: "Payments")
+  ): PaymentVoid @doc(category: "Payments") @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """Initializes payment process when it is required by gateway."""
   paymentInitialize(
@@ -18760,13 +18979,13 @@ type Mutation {
 
     """Client-side generated data required to initialize the payment."""
     paymentData: JSONString
-  ): PaymentInitialize @doc(category: "Payments")
+  ): PaymentInitialize @doc(category: "Payments") @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """Check payment balance."""
   paymentCheckBalance(
     """Fields required to check payment balance."""
     input: PaymentCheckBalanceInput!
-  ): PaymentCheckBalance @doc(category: "Payments")
+  ): PaymentCheckBalance @doc(category: "Payments") @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """
   Creates transaction for checkout or order. 
@@ -19353,7 +19572,7 @@ type Mutation {
 
     """ID of the order to capture."""
     id: ID!
-  ): OrderCapture @doc(category: "Orders")
+  ): OrderCapture @doc(category: "Orders") @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """
   Confirms an unconfirmed order by changing status to unfulfilled. 
@@ -19629,7 +19848,7 @@ type Mutation {
 
     """ID of the order to refund."""
     id: ID!
-  ): OrderRefund @doc(category: "Orders")
+  ): OrderRefund @doc(category: "Orders") @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """
   Updates an order. 
@@ -19668,7 +19887,7 @@ type Mutation {
   orderVoid(
     """ID of the order to void."""
     id: ID!
-  ): OrderVoid @doc(category: "Orders")
+  ): OrderVoid @doc(category: "Orders") @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """
   Cancels orders. 
@@ -19996,6 +20215,61 @@ type Mutation {
     """ID of a gift card to activate."""
     id: ID!
   ): GiftCardActivate @doc(category: "Gift cards") @webhookEventsInfo(asyncEvents: [GIFT_CARD_STATUS_CHANGED], syncEvents: [])
+
+  """
+  Restrict a gift card so only the given customer can use it. 
+  
+  Added in Saleor 3.23. 
+  
+  Requires one of the following permissions: MANAGE_GIFT_CARD.
+  
+  Triggers the following webhook events:
+  - GIFT_CARD_UPDATED (async): A gift card was updated.
+  """
+  giftCardAssignUser(
+    """ID of the gift card."""
+    id: ID!
+
+    """ID of the customer to restrict the card to."""
+    userId: ID!
+  ): GiftCardAssignUser @doc(category: "Gift cards") @webhookEventsInfo(asyncEvents: [GIFT_CARD_UPDATED], syncEvents: [])
+
+  """
+  Remove a customer restriction from a gift card. 
+  
+  Added in Saleor 3.23. 
+  
+  Requires one of the following permissions: MANAGE_GIFT_CARD.
+  
+  Triggers the following webhook events:
+  - GIFT_CARD_UPDATED (async): A gift card was updated.
+  """
+  giftCardUnassignUser(
+    """ID of the gift card."""
+    id: ID!
+  ): GiftCardUnassignUser @doc(category: "Gift cards") @webhookEventsInfo(asyncEvents: [GIFT_CARD_UPDATED], syncEvents: [])
+
+  """
+  Adjust a gift card's balance by a delta. 
+  
+  Added in Saleor 3.23. 
+  
+  Requires one of the following permissions: MANAGE_GIFT_CARD.
+  
+  Triggers the following webhook events:
+  - GIFT_CARD_UPDATED (async): A gift card was updated.
+  """
+  giftCardBalanceAdjust(
+    """
+    Signed amount to adjust the current balance by. Positive tops up, negative deducts. A deduction below zero clamps the balance to zero. A top-up above the initial balance raises the initial balance to the new current balance. 
+    
+    Added in Saleor 3.23.
+    """
+    amount: Decimal!
+
+    """ID of the gift card to adjust."""
+    id: ID!
+  ): GiftCardBalanceAdjust @doc(category: "Gift cards") @webhookEventsInfo(asyncEvents: [GIFT_CARD_UPDATED], syncEvents: [])
 
   """
   Creates a new gift card. 
@@ -20930,7 +21204,7 @@ type Mutation {
 
     """Checkout token."""
     token: UUID @deprecated(reason: "Use `id` instead.")
-  ): CheckoutPaymentCreate @doc(category: "Checkout")
+  ): CheckoutPaymentCreate @doc(category: "Checkout") @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """
   Updates shipping address in the existing checkout.
@@ -21166,9 +21440,9 @@ type Mutation {
   ): AttributeCreate @doc(category: "Attributes") @webhookEventsInfo(asyncEvents: [ATTRIBUTE_CREATED], syncEvents: [])
 
   """
-  Deletes an attribute. 
+  Deletes an attribute.
   
-  Requires one of the following permissions: MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES.
+  Requires one of the following permissions, depending on the attribute type: MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES for `PRODUCT_TYPE` attributes, MANAGE_PAGE_TYPES_AND_ATTRIBUTES for `PAGE_TYPE` attributes.
   
   Triggers the following webhook events:
   - ATTRIBUTE_DELETED (async): An attribute was deleted.
@@ -21182,9 +21456,9 @@ type Mutation {
   ): AttributeDelete @doc(category: "Attributes") @webhookEventsInfo(asyncEvents: [ATTRIBUTE_DELETED], syncEvents: [])
 
   """
-  Updates attribute. 
+  Updates attribute.
   
-  Requires one of the following permissions: MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES.
+  Requires one of the following permissions, depending on the attribute type: MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES for `PRODUCT_TYPE` attributes, MANAGE_PAGE_TYPES_AND_ATTRIBUTES for `PAGE_TYPE` attributes.
   
   Triggers the following webhook events:
   - ATTRIBUTE_UPDATED (async): An attribute was updated.
@@ -23053,6 +23327,13 @@ type ShopSettingsUpdate @doc(category: "Shop") @webhookEventsInfo(asyncEvents: [
 }
 
 input ShopSettingsInput {
+  """
+  Shop's name.
+  
+  Added in Saleor 3.23.
+  """
+  name: String
+
   """Header text."""
   headerText: String
 
@@ -23371,6 +23652,76 @@ type RefundReasonReferenceTypeClearError @doc(category: "Shop") {
 
   """Failed to clear refund reason reference type"""
   code: RefundSettingsErrorCode!
+}
+
+"""
+Update return settings across all channels.
+
+Added in Saleor 3.23. 
+
+Requires one of the following permissions: MANAGE_SETTINGS.
+"""
+type ReturnSettingsUpdate @doc(category: "Shop") {
+  """Return settings."""
+  returnSettings: ReturnSettings
+  returnSettingsErrors: [ReturnSettingsUpdateError!]! @deprecated(reason: "Use `errors` field instead.")
+  errors: [ReturnSettingsUpdateError!]!
+}
+
+type ReturnSettingsUpdateError @doc(category: "Shop") {
+  """
+  Name of a field that caused the error. A value of `null` indicates that the error isn't associated with a particular field.
+  """
+  field: String
+
+  """The error message."""
+  message: String
+
+  """Failed to update Return Settings"""
+  code: ReturnSettingsErrorCode!
+}
+
+enum ReturnSettingsErrorCode @doc(category: "Shop") {
+  INVALID
+  NOT_FOUND
+  REQUIRED
+  GRAPHQL_ERROR
+}
+
+input ReturnSettingsUpdateInput @doc(category: "Shop") {
+  """
+  The ID of a model type, that will be used to reference return reasons. All models of this type will be accepted as return reasons. 
+  
+  Added in Saleor 3.23.
+  """
+  returnReasonReferenceType: ID!
+}
+
+"""
+Updates ReturnSettings. The `Page` (Model) Type will be cleared from `reasonReferenceType`. When it's cleared, passing reason reference to return mutations is no longer accepted and will raise error.
+
+Added in Saleor 3.23. 
+
+Requires one of the following permissions: MANAGE_SETTINGS.
+"""
+type ReturnReasonReferenceTypeClear @doc(category: "Orders") {
+  """Return settings."""
+  returnSettings: ReturnSettings
+  returnSettingsErrors: [ReturnReasonReferenceTypeClearError!]! @deprecated(reason: "Use `errors` field instead.")
+  errors: [ReturnReasonReferenceTypeClearError!]!
+}
+
+type ReturnReasonReferenceTypeClearError @doc(category: "Shop") {
+  """
+  Name of a field that caused the error. A value of `null` indicates that the error isn't associated with a particular field.
+  """
+  field: String
+
+  """The error message."""
+  message: String
+
+  """Failed to clear return reason reference type"""
+  code: ReturnSettingsErrorCode!
 }
 
 """
@@ -25864,6 +26215,8 @@ type PaymentInitialize @doc(category: "Payments") {
 
 """
 Server-side data generated by a payment gateway. Optional step when the payment provider requires an additional action to initialize payment session.
+
+The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
 """
 type PaymentInitialized @doc(category: "Payments") {
   """ID of a payment gateway."""
@@ -25884,6 +26237,11 @@ type PaymentCheckBalance @doc(category: "Payments") {
   errors: [PaymentError!]!
 }
 
+"""
+Fields required to check a payment balance.
+
+The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+"""
 input PaymentCheckBalanceInput @doc(category: "Payments") {
   """An ID of a payment gateway to check."""
   gatewayId: String!
@@ -25898,6 +26256,11 @@ input PaymentCheckBalanceInput @doc(category: "Payments") {
   card: CardInput!
 }
 
+"""
+Card data used to check a payment balance.
+
+The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+"""
 input CardInput {
   """
   Payment method nonce, a token returned by the appropriate provider's SDK.
@@ -27431,6 +27794,20 @@ input OrderReturnProductsInput @doc(category: "Orders") {
 
   """If true, Saleor will call refund action for all lines."""
   refund: Boolean = false
+
+  """
+  Reason for returning this order.
+  
+  Added in Saleor 3.23.
+  """
+  reason: String
+
+  """
+  ID of a `Page` (Model) to reference in reason for this return.
+  
+  Added in Saleor 3.23.
+  """
+  reasonReference: ID
 }
 
 input OrderReturnLineInput @doc(category: "Orders") {
@@ -27442,6 +27819,20 @@ input OrderReturnLineInput @doc(category: "Orders") {
 
   """Determines, if the line should be added to replace order."""
   replace: Boolean = false
+
+  """
+  Reason for returning this line.
+  
+  Added in Saleor 3.23.
+  """
+  reason: String
+
+  """
+  ID of a `Page` (Model) to reference in reason for this line.
+  
+  Added in Saleor 3.23.
+  """
+  reasonReference: ID
 }
 
 input OrderReturnFulfillmentLineInput @doc(category: "Orders") {
@@ -27453,6 +27844,20 @@ input OrderReturnFulfillmentLineInput @doc(category: "Orders") {
 
   """Determines, if the line should be added to replace order."""
   replace: Boolean = false
+
+  """
+  Reason for returning this fulfillment line.
+  
+  Added in Saleor 3.23.
+  """
+  reason: String
+
+  """
+  ID of a `Page` (Model) to reference in reason for this fulfillment line.
+  
+  Added in Saleor 3.23.
+  """
+  reasonReference: ID
 }
 
 """
@@ -27488,6 +27893,7 @@ type OrderGrantRefundCreateError @doc(category: "Orders") {
 enum OrderGrantRefundCreateErrorCode @doc(category: "Orders") {
   GRAPHQL_ERROR
   NOT_FOUND
+  NOT_CONFIGURED
   SHIPPING_COSTS_ALREADY_GRANTED
   AMOUNT_GREATER_THAN_AVAILABLE
   REQUIRED
@@ -27514,6 +27920,8 @@ enum OrderGrantRefundCreateLineErrorCode {
   GRAPHQL_ERROR
   NOT_FOUND
   QUANTITY_GREATER_THAN_AVAILABLE
+  INVALID
+  NOT_CONFIGURED
 }
 
 input OrderGrantRefundCreateInput @doc(category: "Orders") {
@@ -27557,6 +27965,13 @@ input OrderGrantRefundCreateLineInput @doc(category: "Orders") {
 
   """Reason of the granted refund for the line."""
   reason: String
+
+  """
+  ID of a `Page` (Model) to reference in reason for the line.
+  
+  Added in Saleor 3.23.
+  """
+  reasonReference: ID
 }
 
 """
@@ -27595,6 +28010,7 @@ type OrderGrantRefundUpdateError @doc(category: "Orders") {
 enum OrderGrantRefundUpdateErrorCode @doc(category: "Orders") {
   GRAPHQL_ERROR
   NOT_FOUND
+  NOT_CONFIGURED
   REQUIRED
   INVALID
   AMOUNT_GREATER_THAN_AVAILABLE
@@ -27621,6 +28037,8 @@ enum OrderGrantRefundUpdateLineErrorCode {
   GRAPHQL_ERROR
   NOT_FOUND
   QUANTITY_GREATER_THAN_AVAILABLE
+  INVALID
+  NOT_CONFIGURED
 }
 
 input OrderGrantRefundUpdateInput @doc(category: "Orders") {
@@ -27667,6 +28085,13 @@ input OrderGrantRefundUpdateLineAddInput @doc(category: "Orders") {
 
   """Reason of the granted refund for the line."""
   reason: String
+
+  """
+  ID of a `Page` (Model) to reference in reason for the line.
+  
+  Added in Saleor 3.23.
+  """
+  reasonReference: ID
 }
 
 """
@@ -28883,6 +29308,58 @@ enum GiftCardErrorCode @doc(category: "Gift cards") {
   UNIQUE
   EXPIRED_GIFT_CARD
   DUPLICATED_INPUT_ITEM
+  CANNOT_ASSIGN
+}
+
+"""
+Restrict a gift card so only the given customer can use it. 
+
+Added in Saleor 3.23. 
+
+Requires one of the following permissions: MANAGE_GIFT_CARD.
+
+Triggers the following webhook events:
+- GIFT_CARD_UPDATED (async): A gift card was updated.
+"""
+type GiftCardAssignUser @doc(category: "Gift cards") @webhookEventsInfo(asyncEvents: [GIFT_CARD_UPDATED], syncEvents: []) {
+  """The assigned gift card."""
+  giftCard: GiftCard
+  giftCardErrors: [GiftCardError!]! @deprecated(reason: "Use `errors` field instead.")
+  errors: [GiftCardError!]!
+}
+
+"""
+Remove a customer restriction from a gift card. 
+
+Added in Saleor 3.23. 
+
+Requires one of the following permissions: MANAGE_GIFT_CARD.
+
+Triggers the following webhook events:
+- GIFT_CARD_UPDATED (async): A gift card was updated.
+"""
+type GiftCardUnassignUser @doc(category: "Gift cards") @webhookEventsInfo(asyncEvents: [GIFT_CARD_UPDATED], syncEvents: []) {
+  """The unassigned gift card."""
+  giftCard: GiftCard
+  giftCardErrors: [GiftCardError!]! @deprecated(reason: "Use `errors` field instead.")
+  errors: [GiftCardError!]!
+}
+
+"""
+Adjust a gift card's balance by a delta. 
+
+Added in Saleor 3.23. 
+
+Requires one of the following permissions: MANAGE_GIFT_CARD.
+
+Triggers the following webhook events:
+- GIFT_CARD_UPDATED (async): A gift card was updated.
+"""
+type GiftCardBalanceAdjust @doc(category: "Gift cards") @webhookEventsInfo(asyncEvents: [GIFT_CARD_UPDATED], syncEvents: []) {
+  """The adjusted gift card."""
+  giftCard: GiftCard
+  giftCardErrors: [GiftCardError!]! @deprecated(reason: "Use `errors` field instead.")
+  errors: [GiftCardError!]!
 }
 
 """
@@ -28948,6 +29425,13 @@ input GiftCardCreateInput @doc(category: "Gift cards") {
 
   """The gift card note from the staff member."""
   note: String
+
+  """
+  ID of the customer the gift card is restricted to. 
+  
+  Added in Saleor 3.23.
+  """
+  assignedTo: ID
 }
 
 input PriceInput {
@@ -30506,6 +30990,7 @@ enum CheckoutErrorCode @doc(category: "Checkout") {
   INVALID_SHIPPING_METHOD
   NOT_FOUND
   PAYMENT_ERROR
+  PRICE_OVERRIDE_REASON_WITHOUT_OVERRIDE
   QUANTITY_GREATER_THAN_LIMIT
   REQUIRED
   SHIPPING_ADDRESS_NOT_SET
@@ -30682,6 +31167,13 @@ input CheckoutLineInput @doc(category: "Checkout") {
   Custom price of the item. Can be set only by apps with `HANDLE_CHECKOUTS` permission. When the line with the same variant will be provided multiple times, the last price will be used.
   """
   price: PositiveDecimal
+
+  """
+  Reason explaining why a custom `price` was set on the line, for debugging and auditing. Can be set only by apps with `HANDLE_CHECKOUTS` permission and only when the line has a `price` override. Setting a new `price` without a reason clears the previous reason. Blank values are stored as no reason. Limited to 255 characters; longer values are truncated.
+  
+  Added in Saleor 3.23.
+  """
+  priceOverrideReason: String
 
   """
   Flag that allow force splitting the same variant into multiple lines by skipping the matching logic.
@@ -30909,6 +31401,13 @@ input CheckoutLineUpdateInput @doc(category: "Checkout") {
   """
   price: PositiveDecimal
 
+  """
+  Reason explaining why a custom `price` was set on the line, for debugging and auditing. Can be set only by apps with `HANDLE_CHECKOUTS` permission and only when the line has a `price` override. Setting a new `price` without a reason clears the previous reason. Blank values are stored as no reason. Limited to 255 characters; longer values are truncated.
+  
+  Added in Saleor 3.23.
+  """
+  priceOverrideReason: String
+
   """ID of the line."""
   lineId: ID
 
@@ -30946,6 +31445,11 @@ type CheckoutPaymentCreate @doc(category: "Checkout") {
   errors: [PaymentError!]!
 }
 
+"""
+Fields required to create a payment.
+
+The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+"""
 input PaymentInput @doc(category: "Payments") {
   """A gateway to use with that payment."""
   gateway: String!
@@ -30981,15 +31485,15 @@ enum StorePaymentMethodEnum @doc(category: "Payments") {
   """
   On session storage type. The payment is stored only to be reused when the customer is present in the checkout flow.
   """
-  ON_SESSION
+  ON_SESSION @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """
   Off session storage type. The payment is stored to be reused even if the customer is absent.
   """
-  OFF_SESSION
+  OFF_SESSION @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 
   """Storage is disabled. The payment is not stored."""
-  NONE
+  NONE @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 }
 
 """
@@ -31608,9 +32112,9 @@ input AttributeValueCreateInput @doc(category: "Attributes") {
 }
 
 """
-Deletes an attribute. 
+Deletes an attribute.
 
-Requires one of the following permissions: MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES.
+Requires one of the following permissions, depending on the attribute type: MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES for `PRODUCT_TYPE` attributes, MANAGE_PAGE_TYPES_AND_ATTRIBUTES for `PAGE_TYPE` attributes.
 
 Triggers the following webhook events:
 - ATTRIBUTE_DELETED (async): An attribute was deleted.
@@ -31622,9 +32126,9 @@ type AttributeDelete @doc(category: "Attributes") @webhookEventsInfo(asyncEvents
 }
 
 """
-Updates attribute. 
+Updates attribute.
 
-Requires one of the following permissions: MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES.
+Requires one of the following permissions, depending on the attribute type: MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES for `PRODUCT_TYPE` attributes, MANAGE_PAGE_TYPES_AND_ATTRIBUTES for `PAGE_TYPE` attributes.
 
 Triggers the following webhook events:
 - ATTRIBUTE_UPDATED (async): An attribute was updated.
@@ -32118,6 +32622,7 @@ enum AppErrorCode @doc(category: "Apps") {
   INVALID_URL_FORMAT
   INVALID_MANIFEST_FORMAT
   INVALID_CUSTOM_HEADERS
+  DUPLICATED_EXTENSION_IDENTIFIER
   MANIFEST_URL_CANT_CONNECT
   NOT_FOUND
   REQUIRED
@@ -32361,6 +32866,13 @@ type AppManifestExtension @doc(category: "Apps") {
   Added in Saleor 3.22.
   """
   settings: JSON!
+
+  """
+  Extension identifier, unique per app. Null when the app does not declare one.
+  
+  Added in Saleor 3.23.
+  """
+  identifier: String
 }
 
 type AppManifestWebhook @doc(category: "Apps") {
@@ -37083,7 +37595,11 @@ type ThumbnailCreated implements Event @doc(category: "Miscellaneous") {
   mediaUrl: String
 }
 
-"""Authorize payment."""
+"""
+Authorize payment.
+
+The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+"""
 type PaymentAuthorize implements Event @doc(category: "Payments") {
   """Time of the event."""
   issuedAt: DateTime
@@ -37098,10 +37614,14 @@ type PaymentAuthorize implements Event @doc(category: "Payments") {
   recipient: App
 
   """Look up a payment."""
-  payment: Payment
+  payment: Payment @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 }
 
-"""Capture payment."""
+"""
+Capture payment.
+
+The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+"""
 type PaymentCaptureEvent implements Event @doc(category: "Payments") {
   """Time of the event."""
   issuedAt: DateTime
@@ -37116,10 +37636,14 @@ type PaymentCaptureEvent implements Event @doc(category: "Payments") {
   recipient: App
 
   """Look up a payment."""
-  payment: Payment
+  payment: Payment @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 }
 
-"""Refund payment."""
+"""
+Refund payment.
+
+The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+"""
 type PaymentRefundEvent implements Event @doc(category: "Payments") {
   """Time of the event."""
   issuedAt: DateTime
@@ -37134,10 +37658,14 @@ type PaymentRefundEvent implements Event @doc(category: "Payments") {
   recipient: App
 
   """Look up a payment."""
-  payment: Payment
+  payment: Payment @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 }
 
-"""Void payment."""
+"""
+Void payment.
+
+The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+"""
 type PaymentVoidEvent implements Event @doc(category: "Payments") {
   """Time of the event."""
   issuedAt: DateTime
@@ -37152,10 +37680,14 @@ type PaymentVoidEvent implements Event @doc(category: "Payments") {
   recipient: App
 
   """Look up a payment."""
-  payment: Payment
+  payment: Payment @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 }
 
-"""Confirm payment."""
+"""
+Confirm payment.
+
+The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+"""
 type PaymentConfirmEvent implements Event @doc(category: "Payments") {
   """Time of the event."""
   issuedAt: DateTime
@@ -37170,10 +37702,14 @@ type PaymentConfirmEvent implements Event @doc(category: "Payments") {
   recipient: App
 
   """Look up a payment."""
-  payment: Payment
+  payment: Payment @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 }
 
-"""Process payment."""
+"""
+Process payment.
+
+The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+"""
 type PaymentProcessEvent implements Event @doc(category: "Payments") {
   """Time of the event."""
   issuedAt: DateTime
@@ -37188,10 +37724,14 @@ type PaymentProcessEvent implements Event @doc(category: "Payments") {
   recipient: App
 
   """Look up a payment."""
-  payment: Payment
+  payment: Payment @deprecated(reason: "The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.")
 }
 
-"""List payment gateways."""
+"""
+List payment gateways.
+
+The legacy Payments API is deprecated and will be removed. Use the Transactions API instead.
+"""
 type PaymentListGateways implements Event @doc(category: "Payments") {
   """Time of the event."""
   issuedAt: DateTime
@@ -37894,6 +38434,13 @@ type AssignedSwatchAttributeValue @doc(category: "Attributes") {
 
   """File associated with the attribute."""
   file: File
+
+  """
+  Translation of the name.
+  
+  Added in Saleor 3.22.
+  """
+  translation(languageCode: LanguageCodeEnum!): String
 }
 
 """

@@ -1,6 +1,6 @@
 {
   "name": "saleor-app-search",
-  "version": "1.29.5",
+  "version": "1.31.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -59,6 +59,7 @@
     "dynamodb-toolbox": "catalog:",
     "graphql": "catalog:",
     "graphql-tag": "catalog:",
+    "lucide-react": "catalog:",
     "next": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
@@ -79,6 +80,7 @@
     "@saleor/typescript-config-apps": "workspace:*",
     "@testing-library/dom": "10.4.0",
     "@testing-library/react": "16.2.0",
+    "@types/node": "catalog:",
     "@types/react": "18.2.5",
     "@types/react-dom": "18.2.5",
     "@vitejs/plugin-react": "catalog:",
