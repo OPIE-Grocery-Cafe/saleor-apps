@@ -48,5 +48,7 @@ jobs:
           test -n "$E2E_SALEOR_API_URL"
           test -n "$E2E_CHARGE_CHANNEL_SLUG"
           test -n "$E2E_AUTHORIZATION_CHANNEL_SLUG"
+      - name: Install protected browser runtime
+        run: pnpm --filter saleor-app-payment-stripe exec playwright install --with-deps chromium
       - name: Run protected Stripe test-mode matrix
         run: pnpm --filter saleor-app-payment-stripe test:e2e
