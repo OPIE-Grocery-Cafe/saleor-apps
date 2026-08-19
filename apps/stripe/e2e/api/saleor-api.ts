@@ -47,6 +47,7 @@ export class SaleorApi {
   private fetchProductVariant(channelSlug: string) {
     return this.callGraphqlApi(FetchProductDocument, {
       channelSlug,
+      sku: env.E2E_PRODUCT_VARIANT_SKU,
     });
   }
 
@@ -60,10 +61,13 @@ export class SaleorApi {
   async createCheckout(args: { channelSlug: string }) {
     const productResponse = await this.fetchProductVariant(args.channelSlug);
 
-    const variantId = productResponse.data.products?.edges[0]?.node.defaultVariant?.id;
+    const variant = productResponse.data.productVariant;
+    const variantId = variant?.id;
 
-    if (!variantId) {
-      throw new Error("No product variant found");
+    if (!variantId || !variant.sku?.trim() || !variant.product.isAvailableForPurchase) {
+      throw new Error(
+        `Configured contractual SKU ${env.E2E_PRODUCT_VARIANT_SKU} is unavailable in ${args.channelSlug}`,
+      );
     }
 
     const createCheckoutResponse = await this.callGraphqlApi(CheckoutCreateDocument, {
