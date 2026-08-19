@@ -85,7 +85,7 @@ test("Complete checkout with transactionFlowStrategy: authorize", async ({ reque
   });
 
   expect(order.id, "order.id").toBeDefined();
-  expect(order.status, "order.status").toBe("UNFULFILLED");
+  expect(order.status, "order.status").toBe("UNCONFIRMED");
   expect(order.chargeStatus, "order.chargeStatus").toBe("NONE");
   expect(order.paymentStatus, "order.paymentStatus").toBe("NOT_CHARGED");
   expect(order.authorizeStatus, "order.authorizeStatus").toBe("FULL");
