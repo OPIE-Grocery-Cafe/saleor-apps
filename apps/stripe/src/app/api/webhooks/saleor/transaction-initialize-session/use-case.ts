@@ -112,6 +112,13 @@ export class TransactionInitializeSessionUseCase {
         stripeMoney,
         idempotencyKey: args.idempotencyKey,
         intentParams: {
+          /*
+           * Deferred Stripe Elements validates the PaymentIntent's top-level
+           * capture method before it will attach the customer's payment method.
+           * A nested card override alone leaves the intent as automatic_async
+           * and makes every Saleor AUTHORIZATION fail in Stripe.js.
+           */
+          capture_method: args.event.action.actionType === "AUTHORIZATION" ? "manual" : undefined,
           // Card rails include ordinary cards plus eligible Apple Pay and Google Pay wallets.
           payment_method_types: ["card"],
           payment_method_options: {
