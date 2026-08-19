@@ -1,10 +1,7 @@
 import { vi } from "vitest";
 
 vi.stubEnv("SECRET_KEY", "test_secret_key");
-vi.stubEnv("DYNAMODB_MAIN_TABLE_NAME", "test-main-table");
-vi.stubEnv("AWS_REGION", "test");
-vi.stubEnv("AWS_ACCESS_KEY_ID", "test-id");
-vi.stubEnv("AWS_SECRET_ACCESS_KEY", "test-key");
+vi.stubEnv("COMMERCE_DATABASE_URL", "postgresql://test:test@localhost:5432/opie_commerce");
 
 /**
  * Add test setup logic here

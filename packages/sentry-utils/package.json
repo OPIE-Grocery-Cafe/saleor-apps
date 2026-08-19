@@ -5,6 +5,9 @@
   "exports": {
     ".": {
       "default": "./index.ts"
+    },
+    "./scrub-sensitive-event-data": {
+      "default": "./src/scrub-sensitive-event-data.ts"
     }
   },
   "main": "index.ts",
@@ -19,7 +22,8 @@
     "@sentry/nextjs": "catalog:",
     "@types/node": "catalog:",
     "eslint": "catalog:",
-    "typescript": "5.8.2"
+    "typescript": "5.8.2",
+    "vitest": "catalog:"
   },
   "peerDependencies": {
     "@sentry/nextjs": "catalog:"

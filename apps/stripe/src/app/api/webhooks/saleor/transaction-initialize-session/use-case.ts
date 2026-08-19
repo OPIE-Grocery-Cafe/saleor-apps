@@ -112,13 +112,8 @@ export class TransactionInitializeSessionUseCase {
         stripeMoney,
         idempotencyKey: args.idempotencyKey,
         intentParams: {
-          /*
-           * Enable all payment methods configured in the Stripe Dashboard.
-           * The app validated if it allow payment method before.
-           */
-          automatic_payment_methods: {
-            enabled: true,
-          },
+          // Card rails include ordinary cards plus eligible Apple Pay and Google Pay wallets.
+          payment_method_types: ["card"],
           payment_method_options: {
             ...args.selectedPaymentMethodOptions,
           },
@@ -368,7 +363,7 @@ export class TransactionInitializeSessionUseCase {
       });
 
       if (cancelResult.isErr()) {
-        this.logger.warn("Failed to cancel orphaned Payment Intent after DynamoDB write failure", {
+        this.logger.warn("Failed to cancel orphaned Payment Intent after persistence failure", {
           stripePaymentIntentId,
           error: cancelResult.error,
         });
@@ -377,7 +372,7 @@ export class TransactionInitializeSessionUseCase {
       return err(new BrokenAppResponse(appContextContainer.getContextValue(), recordResult.error));
     }
 
-    this.logger.info("Wrote Transaction to DynamoDB", {
+    this.logger.info("Recorded transaction in PostgreSQL", {
       transaction: recordedTransaction,
     });
 

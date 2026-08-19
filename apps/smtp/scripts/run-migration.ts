@@ -1,5 +1,6 @@
 import { parseArgs } from "node:util";
 
+import { scrubSensitiveEventData } from "@saleor/sentry-utils/scrub-sensitive-event-data";
 import * as Sentry from "@sentry/nextjs";
 
 import { env } from "../src/env";
@@ -21,7 +22,8 @@ const logger = createMigrationScriptLogger("RemoveDigitalContentUrlMigration");
 Sentry.init({
   dsn: env.NEXT_PUBLIC_SENTRY_DSN,
   environment: env.ENV,
-  includeLocalVariables: true,
+  includeLocalVariables: false,
+  beforeSend: scrubSensitiveEventData,
   skipOpenTelemetrySetup: true,
   ignoreErrors: [],
   integrations: [],
@@ -34,6 +36,6 @@ const runMigration = async () => {
 runMigration();
 
 process.on("beforeExit", () => {
-  logger.info(`Migration complete for all environments from ${env.APL} APL`);
+  logger.info("Migration complete for all PostgreSQL installations");
   process.exit(0);
 });

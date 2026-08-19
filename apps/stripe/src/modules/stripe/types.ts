@@ -41,6 +41,7 @@ export interface CreatePaymentIntentArgs {
   intentParams: Pick<
     Stripe.PaymentIntentCreateParams,
     | "automatic_payment_methods"
+    | "payment_method_types"
     | "payment_method_options"
     | "confirm"
     | "payment_method"
@@ -59,6 +60,7 @@ export interface IStripePaymentIntentsApi {
   }): Promise<Result<Stripe.PaymentIntent, unknown>>;
   capturePaymentIntent(args: {
     id: StripePaymentIntentId;
+    amountToCapture?: number;
   }): Promise<Result<Stripe.PaymentIntent, unknown>>;
   cancelPaymentIntent(args: {
     id: StripePaymentIntentId;

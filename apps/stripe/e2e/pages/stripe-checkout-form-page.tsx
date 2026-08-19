@@ -1,4 +1,4 @@
-import { type Locator, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import { env } from "e2e/env";
 
 export class StripeCheckoutFormPage {
@@ -7,7 +7,6 @@ export class StripeCheckoutFormPage {
   readonly cardExpiryInput: Locator;
   readonly cardCvcInput: Locator;
   readonly countryInput: Locator;
-  readonly payButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -23,19 +22,34 @@ export class StripeCheckoutFormPage {
     this.countryInput = page
       .frameLocator('[title="Secure payment input frame"]')
       .locator('select[name="country"]');
-    this.payButton = page.getByTestId("button-pay");
   }
 
-  private constructPath(checkoutId: string) {
-    const encodedGraphqlUrl = encodeURIComponent(env.E2E_SALEOR_API_URL);
-    const gateway = "stripe";
-    const appId = "saleor.app.payment.stripe";
+  async initialize(args: { publishableKey: string; amount: number; currency: string }) {
+    await this.page.goto(env.E2E_BASE_URL);
+    await this.page.setContent(`
+      <!doctype html>
+      <html>
+        <body>
+          <form id="payment-form"><div id="payment-element"></div></form>
+          <script src="https://js.stripe.com/v3/"></script>
+        </body>
+      </html>
+    `);
+    await this.page.waitForFunction(() => typeof window.Stripe === "function");
+    await this.page.evaluate(async ({ publishableKey, amount, currency }) => {
+      const stripe = window.Stripe(publishableKey);
+      const elements = stripe.elements({
+        mode: "payment",
+        amount: Math.round(amount * 100),
+        currency: currency.toLowerCase(),
+        paymentMethodCreation: "manual",
+      });
+      const paymentElement = elements.create("payment", { layout: "tabs" });
 
-    return `/env/${encodedGraphqlUrl}/checkout/${checkoutId}/payment-gateway/${gateway}/${appId}`;
-  }
-
-  async goto(args: { checkoutId: string }) {
-    await this.page.goto(this.constructPath(args.checkoutId));
+      paymentElement.mount("#payment-element");
+      window.opieStripeE2E = { stripe, elements };
+    }, args);
+    await expect(this.cardNumberInput).toBeVisible();
   }
 
   async fillPaymentInformation() {
@@ -52,7 +66,117 @@ export class StripeCheckoutFormPage {
     await this.countryInput.selectOption("PL");
   }
 
-  async pay() {
-    await this.payButton.click();
+  async createPaymentMethod() {
+    const result = await this.page.evaluate(async () => {
+      const context = window.opieStripeE2E;
+
+      if (!context) {
+        return { error: "Stripe test context is missing" };
+      }
+
+      const submitResult = await context.elements.submit();
+
+      if (submitResult.error) {
+        return { error: submitResult.error.message ?? submitResult.error.type };
+      }
+
+      const paymentMethodResult = await context.stripe.createPaymentMethod({
+        elements: context.elements,
+        params: {
+          billing_details: {
+            name: "OPIE Stripe E2E",
+            email: "saleor-app-payment-stripe-e2e-test@saleor.io",
+            address: { country: "PL" },
+          },
+        },
+      });
+
+      return {
+        error: paymentMethodResult.error?.message,
+        paymentMethodId: paymentMethodResult.paymentMethod?.id,
+      };
+    });
+
+    if (result.error || !result.paymentMethodId) {
+      throw new Error(`Stripe payment method creation failed: ${result.error ?? "missing ID"}`);
+    }
+
+    return result.paymentMethodId;
+  }
+
+  async confirmPayment(args: { clientSecret: string; paymentMethodId: string }) {
+    const result = await this.page.evaluate(async ({ clientSecret, paymentMethodId }) => {
+      const context = window.opieStripeE2E;
+
+      if (!context) {
+        return { error: "Stripe test context is missing" };
+      }
+
+      const confirmResult = await context.stripe.confirmPayment({
+        clientSecret,
+        redirect: "if_required",
+        confirmParams: {
+          return_url: window.location.href,
+          payment_method: paymentMethodId,
+        },
+      });
+
+      return {
+        error: confirmResult.error?.message,
+        status: confirmResult.paymentIntent?.status,
+      };
+    }, args);
+
+    if (result.error) {
+      throw new Error(`Stripe confirmation failed: ${result.error}`);
+    }
+
+    expect(["requires_capture", "succeeded"]).toContain(result.status);
+  }
+}
+
+declare global {
+  interface Window {
+    Stripe: (publishableKey: string) => {
+      elements: (options: {
+        mode: "payment";
+        amount: number;
+        currency: string;
+        paymentMethodCreation: "manual";
+      }) => {
+        create: (
+          type: "payment",
+          options: { layout: "tabs" },
+        ) => {
+          mount: (selector: string) => void;
+        };
+        submit: () => Promise<{ error?: { message?: string; type: string } }>;
+      };
+      createPaymentMethod: (options: {
+        elements: Window["opieStripeE2E"]["elements"];
+        params: {
+          billing_details: {
+            name: string;
+            email: string;
+            address: { country: string };
+          };
+        };
+      }) => Promise<{
+        error?: { message?: string };
+        paymentMethod?: { id: string };
+      }>;
+      confirmPayment: (options: {
+        clientSecret: string;
+        redirect: "if_required";
+        confirmParams: { return_url: string; payment_method: string };
+      }) => Promise<{
+        error?: { message?: string };
+        paymentIntent?: { status: string };
+      }>;
+    };
+    opieStripeE2E: {
+      stripe: ReturnType<Window["Stripe"]>;
+      elements: ReturnType<ReturnType<Window["Stripe"]>["elements"]>;
+    };
   }
 }

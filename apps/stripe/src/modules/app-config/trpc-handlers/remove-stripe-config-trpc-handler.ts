@@ -111,7 +111,7 @@ export class RemoveStripeConfigTrpcHandler {
         }
 
         /**
-         * TODO: To make it more reliable, we can use transact writes in DynamoDB, but even if this partially fails,
+         * TODO: This can be made atomic in PostgreSQL, but even if the external cleanup partially fails,
          * next operations should fix invalid state
          */
         const unbindingResults = Result.combine(

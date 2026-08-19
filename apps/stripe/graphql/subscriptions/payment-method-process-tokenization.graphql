@@ -1,0 +1,18 @@
+fragment PaymentMethodProcessTokenizationEvent on PaymentMethodProcessTokenizationSession {
+  ...EventMetadata
+  user {
+    id
+    email
+  }
+  channel {
+    ...Channel
+  }
+  data
+  id
+}
+
+subscription PaymentMethodProcessTokenization {
+  event {
+    ...PaymentMethodProcessTokenizationEvent
+  }
+}

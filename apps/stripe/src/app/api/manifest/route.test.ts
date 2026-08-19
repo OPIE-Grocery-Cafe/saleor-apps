@@ -89,7 +89,7 @@ describe("Manifest handler", async () => {
               {
                 "isActive": true,
                 "name": "Stripe Transaction Charge Requested",
-                "query": "subscription TransactionChargeRequested { event { ...TransactionChargeRequestedEvent }}fragment EventMetadata on Event { version recipient { id }}fragment Channel on Channel { id slug}fragment TransactionChargeRequestedEvent on TransactionChargeRequested { ...EventMetadata action { amount } transaction { id pspReference checkout { id channel { ...Channel } } order { id channel { ...Channel } } }}",
+                "query": "subscription TransactionChargeRequested { event { ...TransactionChargeRequestedEvent }}fragment EventMetadata on Event { version recipient { id }}fragment Channel on Channel { id slug}fragment TransactionChargeRequestedEvent on TransactionChargeRequested { ...EventMetadata action { amount currency } transaction { id pspReference checkout { id channel { ...Channel } } order { id channel { ...Channel } } }}",
                 "syncEvents": [
                   "TRANSACTION_CHARGE_REQUESTED",
                 ],
@@ -112,6 +112,51 @@ describe("Manifest handler", async () => {
                   "TRANSACTION_REFUND_REQUESTED",
                 ],
                 "targetUrl": "https://localhost:3000/api/webhooks/saleor/transaction-refund-requested",
+              },
+              {
+                "isActive": true,
+                "name": "Stripe Payment Gateway Initialize Tokenization",
+                "query": "subscription PaymentGatewayInitializeTokenization { event { ...PaymentGatewayInitializeTokenizationEvent }}fragment EventMetadata on Event { version recipient { id }}fragment Channel on Channel { id slug}fragment PaymentGatewayInitializeTokenizationEvent on PaymentGatewayInitializeTokenizationSession { ...EventMetadata issuedAt user { id email } channel { ...Channel } data}",
+                "syncEvents": [
+                  "PAYMENT_GATEWAY_INITIALIZE_TOKENIZATION_SESSION",
+                ],
+                "targetUrl": "https://localhost:3000/api/webhooks/saleor/payment-gateway-initialize-tokenization",
+              },
+              {
+                "isActive": true,
+                "name": "Stripe Payment Method Initialize Tokenization",
+                "query": "subscription PaymentMethodInitializeTokenization { event { ...PaymentMethodInitializeTokenizationEvent }}fragment EventMetadata on Event { version recipient { id }}fragment Channel on Channel { id slug}fragment PaymentMethodInitializeTokenizationEvent on PaymentMethodInitializeTokenizationSession { ...EventMetadata issuedAt user { id email } channel { ...Channel } data paymentFlowToSupport}",
+                "syncEvents": [
+                  "PAYMENT_METHOD_INITIALIZE_TOKENIZATION_SESSION",
+                ],
+                "targetUrl": "https://localhost:3000/api/webhooks/saleor/payment-method-initialize-tokenization",
+              },
+              {
+                "isActive": true,
+                "name": "Stripe Payment Method Process Tokenization",
+                "query": "subscription PaymentMethodProcessTokenization { event { ...PaymentMethodProcessTokenizationEvent }}fragment EventMetadata on Event { version recipient { id }}fragment Channel on Channel { id slug}fragment PaymentMethodProcessTokenizationEvent on PaymentMethodProcessTokenizationSession { ...EventMetadata user { id email } channel { ...Channel } data id}",
+                "syncEvents": [
+                  "PAYMENT_METHOD_PROCESS_TOKENIZATION_SESSION",
+                ],
+                "targetUrl": "https://localhost:3000/api/webhooks/saleor/payment-method-process-tokenization",
+              },
+              {
+                "isActive": true,
+                "name": "Stripe List Stored Payment Methods",
+                "query": "subscription ListStoredPaymentMethods { event { ...ListStoredPaymentMethodsEvent }}fragment EventMetadata on Event { version recipient { id }}fragment Channel on Channel { id slug}fragment ListStoredPaymentMethodsEvent on ListStoredPaymentMethods { ...EventMetadata user { id email } channel { ...Channel }}",
+                "syncEvents": [
+                  "LIST_STORED_PAYMENT_METHODS",
+                ],
+                "targetUrl": "https://localhost:3000/api/webhooks/saleor/list-stored-payment-methods",
+              },
+              {
+                "isActive": true,
+                "name": "Stripe Stored Payment Method Delete Requested",
+                "query": "subscription StoredPaymentMethodDeleteRequested { event { ...StoredPaymentMethodDeleteRequestedEvent }}fragment EventMetadata on Event { version recipient { id }}fragment Channel on Channel { id slug}fragment StoredPaymentMethodDeleteRequestedEvent on StoredPaymentMethodDeleteRequested { ...EventMetadata user { id email } channel { ...Channel } paymentMethodId}",
+                "syncEvents": [
+                  "STORED_PAYMENT_METHOD_DELETE_REQUESTED",
+                ],
+                "targetUrl": "https://localhost:3000/api/webhooks/saleor/stored-payment-method-delete-requested",
               },
             ],
           }

@@ -1,0 +1,28 @@
+mutation transactionInitialize(
+  $checkoutId: ID!
+  $amount: PositiveDecimal!
+  $idempotencyKey: String!
+  $paymentGateway: PaymentGatewayToInitialize!
+) {
+  transactionInitialize(
+    id: $checkoutId
+    amount: $amount
+    idempotencyKey: $idempotencyKey
+    paymentGateway: $paymentGateway
+  ) {
+    transaction {
+      id
+      actions
+    }
+    transactionEvent {
+      type
+      message
+    }
+    data
+    errors {
+      field
+      message
+      code
+    }
+  }
+}

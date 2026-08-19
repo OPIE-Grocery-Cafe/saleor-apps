@@ -16,7 +16,7 @@ export class UpdateMappingTrpcHandler {
     return this.baseProcedure
       .input(
         z.object({
-          configId: z.string().uuid(),
+          configId: z.string().uuid().nullable(),
           channelId: z.string(),
         }),
       )

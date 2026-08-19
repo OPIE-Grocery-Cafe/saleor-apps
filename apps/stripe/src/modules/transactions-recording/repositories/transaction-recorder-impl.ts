@@ -1,7 +1,7 @@
-import { DynamoDBTransactionRecorderRepo } from "@/modules/transactions-recording/repositories/dynamodb/dynamodb-transaction-recorder-repo";
+import { getStripePostgresPool } from "@/modules/postgres/postgres";
+import { PostgresTransactionRecorderRepo } from "@/modules/transactions-recording/repositories/postgres/postgres-transaction-recorder-repo";
 import { type TransactionRecorderRepo } from "@/modules/transactions-recording/repositories/transaction-recorder-repo";
 
-/**
- * When forking, you can replace this only file with custom implementation, to replace DynamoDB with another storage
- */
-export const transactionRecorder: TransactionRecorderRepo = new DynamoDBTransactionRecorderRepo();
+export const transactionRecorder: TransactionRecorderRepo = new PostgresTransactionRecorderRepo(
+  getStripePostgresPool(),
+);

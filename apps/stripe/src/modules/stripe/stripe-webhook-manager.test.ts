@@ -15,7 +15,12 @@ describe("StripeWebhookManager", () => {
 
   beforeEach(() => {
     vi.spyOn(stripeSdkMock.webhookEndpoints, "create");
-    vi.spyOn(stripeSdkMock.webhookEndpoints, "del");
+    vi.spyOn(stripeSdkMock.webhookEndpoints, "del").mockResolvedValue({
+      id: "test-id",
+      object: "webhook_endpoint",
+      deleted: true,
+      lastResponse: {} as never,
+    });
 
     vi.spyOn(StripeClient, "createFromRestrictedKey").mockImplementation(
       () => new StripeClient(stripeSdkMock),
@@ -77,6 +82,7 @@ describe("StripeWebhookManager", () => {
       expect(result._unsafeUnwrapErr()).toMatchInlineSnapshot(
         `[CantCreateWebhookError: Result from Stripe was unexpected]`,
       );
+      expect(stripeSdkMock.webhookEndpoints.del).toHaveBeenCalledWith("test-id");
     });
 
     it("Returns CantCreateWebhookError if Stripe SDK returns any error", async () => {
@@ -192,5 +198,22 @@ describe("StripeWebhookManager", () => {
 
     expect(result.isOk()).toBe(true);
     expect(stripeSdkMock.webhookEndpoints.del).toHaveBeenCalledWith("we_123");
+  });
+
+  it("treats repeated removal of an absent webhook as an idempotent success", async () => {
+    vi.mocked(stripeSdkMock.webhookEndpoints.del).mockRejectedValueOnce(
+      new Stripe.errors.StripeInvalidRequestError({
+        message: "No such webhook endpoint",
+        type: "invalid_request_error",
+        code: "resource_missing",
+      }),
+    );
+
+    const result = await instance.removeWebhook({
+      webhookId: "we_missing",
+      restrictedKey: mockedStripeRestrictedKey,
+    });
+
+    expect(result.isOk()).toBe(true);
   });
 });

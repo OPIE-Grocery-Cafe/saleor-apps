@@ -102,9 +102,7 @@ describe("TransactionInitializeSessionUseCase", () => {
         stripeMoney: expect.any(StripeMoney),
         idempotencyKey: saleorEvent.idempotencyKey,
         intentParams: {
-          automatic_payment_methods: {
-            enabled: true,
-          },
+          payment_method_types: ["card"],
           payment_method_options: {
             card: {
               capture_method: captureMethod,
@@ -517,7 +515,7 @@ describe("TransactionInitializeSessionUseCase", () => {
     expect(cancelSpy).toHaveBeenCalledWith({ id: "pi_orphaned" });
   });
 
-  it("Cancels Payment Intent when DynamoDB write fails", async () => {
+  it("cancels the Payment Intent when the PostgreSQL transaction write fails", async () => {
     const saleorEvent = getMockedTransactionInitializeSessionEvent();
     const transactionRecorder = new MockedTransactionRecorder();
 

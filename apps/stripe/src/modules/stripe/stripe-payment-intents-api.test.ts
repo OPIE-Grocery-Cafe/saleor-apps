@@ -101,4 +101,20 @@ describe("StripePaymentIntentsApi", () => {
       expect(api).toBeInstanceOf(StripePaymentIntentsApi);
     });
   });
+
+  describe("capturePaymentIntent", () => {
+    it("forwards the exact requested partial-capture amount to Stripe", async () => {
+      const clientWrapper = StripeClient.createFromRestrictedKey(mockedStripeRestrictedKey);
+      const instance = StripePaymentIntentsApi.createFromClient(clientWrapper);
+      const capture = vi
+        .spyOn(clientWrapper.nativeClient.paymentIntents, "capture")
+        .mockResolvedValue({} as never);
+
+      await instance.capturePaymentIntent({ id: "pi_partial" as never, amountToCapture: 1_234 });
+
+      expect(capture).toHaveBeenCalledExactlyOnceWith("pi_partial", {
+        amount_to_capture: 1_234,
+      });
+    });
+  });
 });

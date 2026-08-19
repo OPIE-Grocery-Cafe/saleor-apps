@@ -20,7 +20,11 @@ import {
   getChannelIdFromRequestedEventPayload,
   getTransactionFromRequestedEventPayload,
 } from "@/modules/saleor/transaction-requested-event-helpers";
-import { mapStripeErrorToApiError } from "@/modules/stripe/stripe-api-error";
+import {
+  mapStripeErrorToApiError,
+  StripeInvalidRequestError,
+} from "@/modules/stripe/stripe-api-error";
+import { StripeMoney } from "@/modules/stripe/stripe-money";
 import { createStripePaymentIntentId } from "@/modules/stripe/stripe-payment-intent-id";
 import { type IStripePaymentIntentsApiFactory } from "@/modules/stripe/types";
 import { ChargeFailureResult } from "@/modules/transaction-result/failure-result";
@@ -110,8 +114,78 @@ export class TransactionChargeRequestedUseCase {
 
     const paymentIntentIdResult = createStripePaymentIntentId(transaction.pspReference);
 
+    const paymentIntentResult = await stripePaymentIntentsApi.getPaymentIntent({
+      id: paymentIntentIdResult,
+    });
+
+    if (paymentIntentResult.isErr()) {
+      const error = mapStripeErrorToApiError(paymentIntentResult.error);
+
+      return ok(
+        new TransactionChargeRequestedUseCaseResponses.Failure({
+          transactionResult: new ChargeFailureResult(),
+          stripePaymentIntentId: paymentIntentIdResult,
+          error,
+          appContext: appContextContainer.getContextValue(),
+        }),
+      );
+    }
+    if (paymentIntentResult.value.currency.toUpperCase() !== event.action.currency.toUpperCase()) {
+      const error = new StripeInvalidRequestError(
+        "Saleor charge currency does not match the Stripe PaymentIntent currency",
+        {
+          props: {
+            stripeCode: "currency_mismatch",
+            stripeParam: "currency",
+          },
+        },
+      );
+
+      return ok(
+        new TransactionChargeRequestedUseCaseResponses.Failure({
+          transactionResult: new ChargeFailureResult(),
+          stripePaymentIntentId: paymentIntentIdResult,
+          error,
+          appContext: appContextContainer.getContextValue(),
+        }),
+      );
+    }
+    const requestedAmountResult = StripeMoney.createFromSaleorAmount({
+      amount: event.action.amount,
+      currency: event.action.currency,
+    });
+
+    if (requestedAmountResult.isErr()) {
+      return err(
+        new BrokenAppResponse(appContextContainer.getContextValue(), requestedAmountResult.error),
+      );
+    }
+    const amountToCapture = requestedAmountResult.value.amount;
+
+    if (amountToCapture > paymentIntentResult.value.amount_capturable) {
+      const error = new StripeInvalidRequestError(
+        "Requested capture exceeds the Stripe PaymentIntent capturable amount",
+        {
+          props: {
+            stripeCode: "amount_exceeds_capturable",
+            stripeParam: "amount_to_capture",
+          },
+        },
+      );
+
+      return ok(
+        new TransactionChargeRequestedUseCaseResponses.Failure({
+          transactionResult: new ChargeFailureResult(),
+          stripePaymentIntentId: paymentIntentIdResult,
+          error,
+          appContext: appContextContainer.getContextValue(),
+        }),
+      );
+    }
+
     const capturePaymentIntentResult = await stripePaymentIntentsApi.capturePaymentIntent({
       id: paymentIntentIdResult,
+      amountToCapture,
     });
 
     if (capturePaymentIntentResult.isErr()) {

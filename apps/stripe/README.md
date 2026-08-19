@@ -54,19 +54,17 @@ pnpm dev
 
 6. Install the app on the Saleor dashboard.
 
-### Integration tests
+### PostgreSQL repository tests
 
-To run integration tests:
-
-1. Create a file named `.env.test` and use the contents of the [`.env.test.example`](./.env.test.example) file as a reference.
-2. Change the values of `INTEGRATION_*` variables
-3. Run tests:
+The unit suite exercises the PostgreSQL APL, Stripe configuration, transaction
+mapping, and stored-customer repositories. Run it with:
 
 ```shell
-pnpm run test:integration
+pnpm run test:unit
 ```
 
-Tests are using mocked Saleor and local DynamoDB in Docker but are calling the real Stripe API.
+Database migrations and role permissions are verified against the dedicated
+commerce PostgreSQL cluster during staging deployment.
 
 ### E2E tests
 

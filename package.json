@@ -8,6 +8,7 @@
     "build": "turbo run build",
     "check-spelling": "cspell '**/*.{jsx,tsx,js,ts,md,mdx}'",
     "check-types": "turbo run check-types",
+    "check:secret-capture": "node scripts/check-secret-capture.mjs",
     "deploy": "turbo run deploy",
     "dev": "turbo run dev",
     "fetch-schema": "curl https://raw.githubusercontent.com/saleor/saleor/${npm_package_config_saleor_schemaVersion}/saleor/graphql/schema.graphql > schema.graphql",
@@ -21,6 +22,7 @@
     "lint:packages": "sherif",
     "lint:packages:fix": "sherif --fix",
     "prepare": "husky",
+    "provision:commerce-roles": "tsx --env-file-if-exists=.env ./scripts/provision-commerce-roles.ts",
     "start": "turbo run start",
     "test": "turbo run test",
     "test:ci": "turbo run test:ci"
@@ -34,19 +36,24 @@
     "@changesets/cli": "2.30.0",
     "@cspell/cspell-types": "8.17.5",
     "@saleor/app-sdk": "catalog:",
+    "@saleor/apps-shared": "workspace:*",
+    "@types/pg": "8.15.6",
     "cspell": "8.17.5",
     "graphql": "catalog:",
     "husky": "9.1.4",
     "knip": "5.46.2",
     "lint-staged": "15.5.0",
+    "pg": "8.16.3",
     "prettier": "3.0.3",
     "sherif": "1.4.0",
     "sort-package-json": "3.0.0",
-    "turbo": "2.4.4"
+    "tsx": "catalog:",
+    "turbo": "2.4.4",
+    "typescript": "catalog:"
   },
   "packageManager": "pnpm@10.28.1",
   "engines": {
-    "node": ">=24.0.0 <25.0.0",
+    "node": ">=20.0.0 <21.0.0",
     "npm": ">=10.0.0 <11.0.0",
     "pnpm": ">=10.0.0 <11.0.0"
   }

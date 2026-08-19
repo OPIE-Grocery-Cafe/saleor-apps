@@ -8,6 +8,13 @@ import { withLoggerContext } from "@/lib/logger-context";
 import packageJson from "@/package.json";
 
 import { paymentGatewayInitializeSessionWebhookDefinition } from "../webhooks/saleor/payment-gateway-initialize-session/webhook-definition";
+import {
+  listStoredPaymentMethodsDefinition,
+  paymentGatewayInitializeTokenizationDefinition,
+  paymentMethodInitializeTokenizationDefinition,
+  paymentMethodProcessTokenizationDefinition,
+  storedPaymentMethodDeleteRequestedDefinition,
+} from "../webhooks/saleor/stored-payment-methods/webhook-definitions";
 import { transactionCancelationRequestedWebhookDefinition } from "../webhooks/saleor/transaction-cancelation-requested/webhook-definition";
 import { transactionChargeRequestedWebhookDefinition } from "../webhooks/saleor/transaction-charge-requested/webhook-definition";
 import { transactionInitializeSessionWebhookDefinition } from "../webhooks/saleor/transaction-initialize-session/webhook-definition";
@@ -49,6 +56,11 @@ const handler = createManifestHandler({
         transactionChargeRequestedWebhookDefinition.getWebhookManifest(apiBaseUrl),
         transactionCancelationRequestedWebhookDefinition.getWebhookManifest(apiBaseUrl),
         transactionRefundRequestedWebhookDefinition.getWebhookManifest(apiBaseUrl),
+        paymentGatewayInitializeTokenizationDefinition.getWebhookManifest(apiBaseUrl),
+        paymentMethodInitializeTokenizationDefinition.getWebhookManifest(apiBaseUrl),
+        paymentMethodProcessTokenizationDefinition.getWebhookManifest(apiBaseUrl),
+        listStoredPaymentMethodsDefinition.getWebhookManifest(apiBaseUrl),
+        storedPaymentMethodDeleteRequestedDefinition.getWebhookManifest(apiBaseUrl),
       ],
     };
 

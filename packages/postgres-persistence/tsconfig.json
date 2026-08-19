@@ -1,0 +1,5 @@
+{
+  "extends": "@saleor/typescript-config-apps/base.json",
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"]
+}

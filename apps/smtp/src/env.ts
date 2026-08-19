@@ -13,7 +13,8 @@ export const env = createEnv({
   },
   server: {
     ALLOWED_DOMAIN_PATTERN: z.string().optional(),
-    APL: z.enum(["saleor-cloud", "file", "dynamodb", "upstash"]).default("file"),
+    COMMERCE_DATABASE_URL: z.string().url(),
+    EXPECTED_COMMERCE_SCHEMA_VERSION: z.string().default("0001_initial.sql"),
     APP_API_BASE_URL: z.string().optional(),
     APP_IFRAME_BASE_URL: z.string().optional(),
     APP_LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
@@ -52,7 +53,8 @@ export const env = createEnv({
   },
   runtimeEnv: {
     ALLOWED_DOMAIN_PATTERN: process.env.ALLOWED_DOMAIN_PATTERN,
-    APL: process.env.APL,
+    COMMERCE_DATABASE_URL: process.env.COMMERCE_DATABASE_URL,
+    EXPECTED_COMMERCE_SCHEMA_VERSION: process.env.EXPECTED_COMMERCE_SCHEMA_VERSION,
     APP_API_BASE_URL: process.env.APP_API_BASE_URL,
     APP_IFRAME_BASE_URL: process.env.APP_IFRAME_BASE_URL,
     APP_LOG_LEVEL: process.env.APP_LOG_LEVEL,
