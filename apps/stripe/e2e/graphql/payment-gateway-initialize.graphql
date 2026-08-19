@@ -1,0 +1,21 @@
+mutation paymentGatewayInitialize(
+  $checkoutId: ID!
+  $paymentGateways: [PaymentGatewayToInitialize!]
+) {
+  paymentGatewayInitialize(id: $checkoutId, paymentGateways: $paymentGateways) {
+    gatewayConfigs {
+      id
+      data
+      errors {
+        field
+        message
+        code
+      }
+    }
+    errors {
+      field
+      message
+      code
+    }
+  }
+}

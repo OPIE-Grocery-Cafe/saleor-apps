@@ -6,6 +6,9 @@ import {
   CheckoutCreateDocument,
   CheckoutDeliveryMethodUpdateDocument,
   FetchProductDocument,
+  PaymentGatewayInitializeDocument,
+  TransactionInitializeDocument,
+  TransactionProcessDocument,
 } from "e2e/generated/graphql";
 import { print } from "graphql";
 
@@ -27,7 +30,18 @@ export class SaleorApi {
       },
     });
 
-    return response.json() as Promise<{ data: TResult }>;
+    const result = (await response.json()) as {
+      data?: TResult;
+      errors?: Array<{ message?: string }>;
+    };
+
+    if (!response.ok() || result.errors?.length || !result.data) {
+      throw new Error(
+        `Saleor GraphQL request failed (${response.status()}): ${JSON.stringify(result.errors)}`,
+      );
+    }
+
+    return { data: result.data };
   }
 
   private fetchProductVariant(channelSlug: string) {
@@ -71,12 +85,93 @@ export class SaleorApi {
       throw new Error("No delivery method found");
     }
 
-    await this.updateCheckoutDeliveryMethod({
+    const deliveryMethodResponse = await this.updateCheckoutDeliveryMethod({
       deliveryMethodId,
       checkoutId,
     });
 
-    return checkoutId;
+    const total =
+      deliveryMethodResponse.data.checkoutDeliveryMethodUpdate?.checkout?.totalPrice?.gross;
+
+    if (!total) {
+      throw new Error("Checkout total is missing");
+    }
+
+    return {
+      id: checkoutId,
+      amount: Number(total.amount),
+      currency: total.currency,
+    };
+  }
+
+  async initializePaymentGateway(args: { checkoutId: string }) {
+    const response = await this.callGraphqlApi(PaymentGatewayInitializeDocument, {
+      checkoutId: args.checkoutId,
+      paymentGateways: [{ id: "saleor.app.payment.stripe" }],
+    });
+    const result = response.data.paymentGatewayInitialize;
+
+    if (!result || result.errors.length > 0) {
+      throw new Error(`Payment gateway initialization failed: ${JSON.stringify(result?.errors)}`);
+    }
+
+    const config = result.gatewayConfigs?.find(
+      (gatewayConfig) => gatewayConfig.id === "saleor.app.payment.stripe",
+    );
+    const data = config?.data as { stripePublishableKey?: unknown } | null | undefined;
+
+    if (config?.errors?.length || typeof data?.stripePublishableKey !== "string") {
+      throw new Error(`Stripe gateway configuration is invalid: ${JSON.stringify(config?.errors)}`);
+    }
+
+    return data.stripePublishableKey;
+  }
+
+  async initializeTransaction(args: {
+    checkoutId: string;
+    amount: number;
+    expectedFlow: "CHARGE" | "AUTHORIZATION";
+  }) {
+    const response = await this.callGraphqlApi(TransactionInitializeDocument, {
+      checkoutId: args.checkoutId,
+      amount: args.amount,
+      idempotencyKey: `stripe-e2e-${args.expectedFlow.toLowerCase()}-${args.checkoutId}`,
+      paymentGateway: {
+        id: "saleor.app.payment.stripe",
+        data: { paymentIntent: { paymentMethod: "card" } },
+      },
+    });
+    const result = response.data.transactionInitialize;
+
+    if (!result || result.errors.length > 0) {
+      throw new Error(`Transaction initialization failed: ${JSON.stringify(result?.errors)}`);
+    }
+
+    const data = result.data as
+      | { paymentIntent?: { stripeClientSecret?: unknown } }
+      | null
+      | undefined;
+    const transactionId = result.transaction?.id;
+    const clientSecret = data?.paymentIntent?.stripeClientSecret;
+
+    if (!transactionId || typeof clientSecret !== "string") {
+      throw new Error("Transaction initialization did not return a transaction and client secret");
+    }
+
+    return { transactionId, clientSecret };
+  }
+
+  async processTransaction(args: { transactionId: string }) {
+    const response = await this.callGraphqlApi(TransactionProcessDocument, {
+      transactionId: args.transactionId,
+    });
+    const result = response.data.transactionProcess;
+
+    if (!result || result.errors.length > 0 || !result.transactionEvent) {
+      throw new Error(`Transaction processing failed: ${JSON.stringify(result?.errors)}`);
+    }
+
+    return result.transactionEvent.type;
   }
 
   async completeCheckout(args: { checkoutId: string }) {
@@ -87,7 +182,11 @@ export class SaleorApi {
     const order = completeCheckoutResponse.data.checkoutComplete?.order;
 
     if (!order) {
-      throw new Error("Checkout completion failed");
+      throw new Error(
+        `Checkout completion failed: ${JSON.stringify(
+          completeCheckoutResponse.data.checkoutComplete?.errors,
+        )}`,
+      );
     }
 
     return order;

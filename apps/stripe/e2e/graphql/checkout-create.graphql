@@ -33,6 +33,12 @@ mutation checkoutCreate($channelSlug: String!, $variantId: ID!, $email: String!)
     }
     checkout {
       id
+      totalPrice {
+        gross {
+          amount
+          currency
+        }
+      }
       shippingMethods {
         id
       }
