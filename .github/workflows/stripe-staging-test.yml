@@ -21,6 +21,7 @@ jobs:
       E2E_SALEOR_API_URL: ${{ secrets.STRIPE_STAGING_SALEOR_URL }}
       E2E_CHARGE_CHANNEL_SLUG: ${{ secrets.STRIPE_STAGING_CHARGE_CHANNEL }}
       E2E_AUTHORIZATION_CHANNEL_SLUG: ${{ secrets.STRIPE_STAGING_AUTH_CHANNEL }}
+      E2E_PRODUCT_VARIANT_SKU: ${{ secrets.STRIPE_STAGING_PRODUCT_SKU }}
     steps:
       - name: Require an immutable commit SHA
         env:
@@ -48,6 +49,7 @@ jobs:
           test -n "$E2E_SALEOR_API_URL"
           test -n "$E2E_CHARGE_CHANNEL_SLUG"
           test -n "$E2E_AUTHORIZATION_CHANNEL_SLUG"
+          test -n "$E2E_PRODUCT_VARIANT_SKU"
       - name: Install protected browser runtime
         # GitHub's Ubuntu runner already includes the required system libraries.
         # Installing OS dependencies here can block indefinitely on apt locks.
