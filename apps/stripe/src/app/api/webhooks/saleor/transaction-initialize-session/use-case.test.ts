@@ -102,6 +102,7 @@ describe("TransactionInitializeSessionUseCase", () => {
         stripeMoney: expect.any(StripeMoney),
         idempotencyKey: saleorEvent.idempotencyKey,
         intentParams: {
+          capture_method: captureMethod,
           payment_method_types: ["card"],
           payment_method_options: {
             card: {
