@@ -9,7 +9,7 @@ type Props = {
   channels: ChannelFragment[];
   configs: StripeFrontendConfigSerializedFields[];
   mapping: Record<string, StripeFrontendConfigSerializedFields>;
-  onMappingChange(data: { channelId: string; configId: string }): void;
+  onMappingChange(data: { channelId: string; configId: string | null }): void;
   isLoading: boolean;
 };
 
@@ -26,16 +26,13 @@ export const ChannelsConfigMapping = ({
     <Layout.AppSectionCard>
       <Box>
         {channels.map((channel) => {
-          const isNotSelected = mapping[channel.id] === undefined;
-
-          const options = configs.map((item) => ({
-            value: item.id,
-            label: item.name,
-          }));
-
-          if (isNotSelected) {
-            options.unshift(emptyValue);
-          }
+          const options = [
+            emptyValue,
+            ...configs.map((item) => ({
+              value: item.id,
+              label: item.name,
+            })),
+          ];
 
           return (
             <Box paddingY={2} key={channel.id} display="flex" justifyContent="space-between">
@@ -46,7 +43,7 @@ export const ChannelsConfigMapping = ({
                   value={mapping[channel.id]?.id ?? ""}
                   onChange={(value) => {
                     onMappingChange({
-                      configId: value,
+                      configId: value || null,
                       channelId: channel.id,
                     });
                   }}

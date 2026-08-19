@@ -48,5 +48,9 @@ jobs:
           test -n "$E2E_SALEOR_API_URL"
           test -n "$E2E_CHARGE_CHANNEL_SLUG"
           test -n "$E2E_AUTHORIZATION_CHANNEL_SLUG"
+      - name: Install protected browser runtime
+        # GitHub's Ubuntu runner already includes the required system libraries.
+        # Installing OS dependencies here can block indefinitely on apt locks.
+        run: pnpm --filter saleor-app-payment-stripe exec playwright install chromium
       - name: Run protected Stripe test-mode matrix
         run: pnpm --filter saleor-app-payment-stripe test:e2e

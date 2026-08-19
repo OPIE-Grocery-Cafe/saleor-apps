@@ -86,4 +86,26 @@ describe("UpdateMappingTrpcHandler", () => {
       ]
     `);
   });
+
+  it("Clears an existing channel mapping", async () => {
+    const { caller, mockedAppConfigRepo } = getTestCaller();
+
+    vi.spyOn(mockedAppConfigRepo, "updateMapping").mockImplementationOnce(async () => ok(null));
+
+    await caller.testProcedure({
+      configId: null,
+      channelId: mockedSaleorChannelId,
+    });
+
+    expect(mockedAppConfigRepo.updateMapping).toHaveBeenCalledWith(
+      {
+        appId: mockedSaleorAppId,
+        saleorApiUrl: mockedSaleorApiUrl,
+      },
+      {
+        channelId: mockedSaleorChannelId,
+        configId: null,
+      },
+    );
+  });
 });
