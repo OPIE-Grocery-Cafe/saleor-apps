@@ -1,0 +1,31 @@
+name: Promotion Policy
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, edited]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-source:
+    name: Main accepts staging or hotfixes only
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate promotion source
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPOSITORY: ${{ github.repository }}
+        run: |
+          if [ "$HEAD_REF" = "staging" ] && [ "$HEAD_REPOSITORY" = "$BASE_REPOSITORY" ]; then
+            exit 0
+          fi
+
+          case "$HEAD_REF" in
+            hotfix/*) exit 0 ;;
+          esac
+
+          echo "Pull requests into main must come from this repository's staging branch or a hotfix/* branch."
+          exit 1

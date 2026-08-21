@@ -3,7 +3,7 @@ name: Stripe app - required PostgreSQL integration tests
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, staging]
   pull_request:
     paths:
       - apps/stripe/**
