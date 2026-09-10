@@ -26,7 +26,10 @@ import {
   type SaleorTransationFlow,
 } from "@/modules/saleor/saleor-transaction-flow";
 import { createSaleorTransactionId } from "@/modules/saleor/saleor-transaction-id";
-import { StoredPaymentMethodsService } from "@/modules/stored-payment-methods/service";
+import {
+  StoredPaymentMethodsService,
+  StoredPaymentMethodUnavailableError,
+} from "@/modules/stored-payment-methods/service";
 import { mapStripeErrorToApiError } from "@/modules/stripe/stripe-api-error";
 import {
   createStripeClientSecret,
@@ -287,7 +290,8 @@ export class TransactionInitializeSessionUseCase {
          * Only the signed webhook's source user is an ownership authority.
          * Client data may choose a method, never a Stripe customer or Saleor user.
          */
-        if (!event.sourceObject.user?.id) throw new Error("Authenticated customer required");
+        if (!event.sourceObject.user?.id)
+          throw new StoredPaymentMethodUnavailableError("Authenticated customer required");
         const stored = await (
           this.storedPaymentMethods ?? new StoredPaymentMethodsService(this.appConfigRepo)
         ).resolveForPayment({
@@ -303,7 +307,19 @@ export class TransactionInitializeSessionUseCase {
           customer: stored.customer,
           payment_method: stored.paymentMethod,
         };
-      } catch {
+      } catch (error) {
+        if (!(error instanceof StoredPaymentMethodUnavailableError)) {
+          captureException(error);
+          this.logger.error("Saved payment method lookup failed", { error });
+
+          return err(
+            new BrokenAppResponse(
+              appContextContainer.getContextValue(),
+              BaseError.normalize(error),
+            ),
+          );
+        }
+
         return ok(
           new TransactionInitializeSessionUseCaseResponses.Failure({
             transactionResult: this.resolveErrorTransactionResult(resolvedTransactionFlow),

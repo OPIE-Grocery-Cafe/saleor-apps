@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import type Stripe from "stripe";
 
+import { BaseError } from "@/lib/errors";
 import { type StripeConfig } from "@/modules/app-config/domain/stripe-config";
 import { type AppConfigRepo } from "@/modules/app-config/repositories/app-config-repo";
 import { getStripePostgresPool } from "@/modules/postgres/postgres";
@@ -11,6 +12,13 @@ import { type StoredPaymentAccess, StoredPaymentCustomerRepo } from "./customer-
 
 type User = { id: string; email?: string | null };
 type Context = StoredPaymentAccess & { channelId: string; user: User };
+
+export const StoredPaymentMethodUnavailableError = BaseError.subclass(
+  "StoredPaymentMethodUnavailableError",
+  {
+    props: { _internalName: "StoredPaymentMethod.Unavailable" as const },
+  },
+);
 
 export class StoredPaymentMethodsService {
   private readonly appConfigRepo: AppConfigRepo;
@@ -137,12 +145,27 @@ export class StoredPaymentMethodsService {
     const { stripe, access } = await this.resolve(context);
     const customer = await this.customerRepo.get(access, context.user.id);
 
-    if (!customer) throw new Error("Saved payment method is unavailable");
-    const method = await stripe.paymentMethods.retrieve(context.paymentMethodId);
+    if (!customer)
+      throw new StoredPaymentMethodUnavailableError("Saved payment method is unavailable");
+    let method: Stripe.PaymentMethod;
+
+    try {
+      method = await stripe.paymentMethods.retrieve(context.paymentMethodId);
+    } catch (error) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "resource_missing"
+      ) {
+        throw new StoredPaymentMethodUnavailableError("Saved payment method is unavailable");
+      }
+      throw error;
+    }
     const owner = typeof method.customer === "string" ? method.customer : method.customer?.id;
 
     if (owner !== customer || method.type !== "card" || !method.card) {
-      throw new Error("Saved payment method is unavailable");
+      throw new StoredPaymentMethodUnavailableError("Saved payment method is unavailable");
     }
 
     return { customer, paymentMethod: method.id };

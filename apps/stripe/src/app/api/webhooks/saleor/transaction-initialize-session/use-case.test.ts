@@ -17,6 +17,7 @@ import {
   BrokenAppResponse,
   MalformedRequestResponse,
 } from "@/app/api/webhooks/saleor/saleor-webhook-responses";
+import { StoredPaymentMethodUnavailableError } from "@/modules/stored-payment-methods/service";
 import { StripeAPIError } from "@/modules/stripe/stripe-api-error";
 import { StripeMoney } from "@/modules/stripe/stripe-money";
 import { type IStripePaymentIntentsApiFactory } from "@/modules/stripe/types";
@@ -117,7 +118,9 @@ describe("TransactionInitializeSessionUseCase", () => {
       const event = getMockedTransactionInitializeSessionEvent({ actionType: "AUTHORIZATION" });
       const resolveForPayment = vi
         .fn()
-        .mockRejectedValue(new Error("Saved payment method is unavailable"));
+        .mockRejectedValue(
+          new StoredPaymentMethodUnavailableError("Saved payment method is unavailable"),
+        );
       const create = vi.spyOn(mockedStripePaymentIntentsApi, "createPaymentIntent");
       const uc = new TransactionInitializeSessionUseCase({
         appConfigRepo: mockedAppConfigRepo,
@@ -144,6 +147,33 @@ describe("TransactionInitializeSessionUseCase", () => {
       expect(create).not.toHaveBeenCalled();
     },
   );
+
+  it("preserves infrastructure failures as retryable webhook errors instead of declining the saved card", async () => {
+    const event = getMockedTransactionInitializeSessionEvent({ actionType: "AUTHORIZATION" });
+    const create = vi.spyOn(mockedStripePaymentIntentsApi, "createPaymentIntent");
+    const uc = new TransactionInitializeSessionUseCase({
+      appConfigRepo: mockedAppConfigRepo,
+      stripePaymentIntentsApiFactory,
+      transactionRecorder: new MockedTransactionRecorder(),
+      storedPaymentMethods: {
+        resolveForPayment: vi.fn().mockRejectedValue(new Error("Database unavailable")),
+      },
+    });
+    const result = await uc.execute({
+      saleorApiUrl: mockedSaleorApiUrl,
+      appId: mockedSaleorAppId,
+      event: {
+        ...event,
+        sourceObject: { ...event.sourceObject, user: { id: "user_123" } },
+        data: { paymentIntent: { paymentMethod: "card", storedPaymentMethodId: "pm_owned" } },
+      },
+      saleorSchemaVersion: mockedSaleorSchemaVersionSupportingPaymentMethodDetails,
+      problemReporter: mockStripeProblemReporter,
+    });
+
+    expect(result.isErr()).toBe(true);
+    expect(create).not.toHaveBeenCalled();
+  });
 
   it.each([
     {
