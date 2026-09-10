@@ -11,6 +11,16 @@ fragment TransactionInitializeSessionEvent on TransactionInitializeSession {
   }
   sourceObject {
     ...SourceObject
+    ... on Checkout {
+      user {
+        id
+      }
+    }
+    ... on Order {
+      user {
+        id
+      }
+    }
   }
   idempotencyKey
 }

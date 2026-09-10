@@ -58,6 +58,93 @@ describe("TransactionInitializeSessionUseCase", () => {
     create: () => mockedStripePaymentIntentsApi,
   } satisfies IStripePaymentIntentsApiFactory;
 
+  it("initializes an owned saved card with manual capture and the original idempotency key", async () => {
+    const event = getMockedTransactionInitializeSessionEvent({ actionType: "AUTHORIZATION" });
+    const sourceObject = {
+      ...event.sourceObject,
+      user: { id: "user_123", email: "customer@example.com" },
+    };
+    const resolveForPayment = vi
+      .fn()
+      .mockResolvedValue({ customer: "cus_123", paymentMethod: "pm_owned" });
+    const create = vi
+      .spyOn(mockedStripePaymentIntentsApi, "createPaymentIntent")
+      .mockResolvedValueOnce(
+        ok({
+          amount: 10000,
+          currency: "usd",
+          client_secret: "secret-value",
+          id: "pi_test",
+          status: "requires_confirmation",
+        } as Stripe.PaymentIntent),
+      );
+    const uc = new TransactionInitializeSessionUseCase({
+      appConfigRepo: mockedAppConfigRepo,
+      stripePaymentIntentsApiFactory,
+      transactionRecorder: new MockedTransactionRecorder(),
+      storedPaymentMethods: { resolveForPayment },
+    });
+
+    await uc.execute({
+      saleorApiUrl: mockedSaleorApiUrl,
+      appId: mockedSaleorAppId,
+      event: {
+        ...event,
+        sourceObject,
+        data: { paymentIntent: { paymentMethod: "card", storedPaymentMethodId: "pm_owned" } },
+      },
+      saleorSchemaVersion: mockedSaleorSchemaVersionSupportingPaymentMethodDetails,
+      problemReporter: mockStripeProblemReporter,
+    });
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        idempotencyKey: "idempotency-key",
+        intentParams: expect.objectContaining({
+          customer: "cus_123",
+          payment_method: "pm_owned",
+          capture_method: "manual",
+        }),
+      }),
+    );
+    expect(resolveForPayment).toHaveBeenCalledWith(
+      expect.objectContaining({ user: sourceObject.user, paymentMethodId: "pm_owned" }),
+    );
+  });
+
+  it.each(["guest", "foreign"])(
+    "refuses a %s saved-card request before creating a PaymentIntent",
+    async (kind) => {
+      const event = getMockedTransactionInitializeSessionEvent({ actionType: "AUTHORIZATION" });
+      const resolveForPayment = vi
+        .fn()
+        .mockRejectedValue(new Error("Saved payment method is unavailable"));
+      const create = vi.spyOn(mockedStripePaymentIntentsApi, "createPaymentIntent");
+      const uc = new TransactionInitializeSessionUseCase({
+        appConfigRepo: mockedAppConfigRepo,
+        stripePaymentIntentsApiFactory,
+        transactionRecorder: new MockedTransactionRecorder(),
+        storedPaymentMethods: { resolveForPayment },
+      });
+      const result = await uc.execute({
+        saleorApiUrl: mockedSaleorApiUrl,
+        appId: mockedSaleorAppId,
+        event: {
+          ...event,
+          sourceObject: {
+            ...event.sourceObject,
+            user: kind === "guest" ? null : { id: "user_123" },
+          },
+          data: { paymentIntent: { paymentMethod: "card", storedPaymentMethodId: "pm_owned" } },
+        },
+        saleorSchemaVersion: mockedSaleorSchemaVersionSupportingPaymentMethodDetails,
+        problemReporter: mockStripeProblemReporter,
+      });
+
+      expect(result._unsafeUnwrap().transactionResult.result).toBe("AUTHORIZATION_FAILURE");
+      expect(create).not.toHaveBeenCalled();
+    },
+  );
+
   it.each([
     {
       actionType: "CHARGE" as const,

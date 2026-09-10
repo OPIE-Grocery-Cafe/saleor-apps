@@ -26,6 +26,7 @@ import {
   type SaleorTransationFlow,
 } from "@/modules/saleor/saleor-transaction-flow";
 import { createSaleorTransactionId } from "@/modules/saleor/saleor-transaction-id";
+import { StoredPaymentMethodsService } from "@/modules/stored-payment-methods/service";
 import { mapStripeErrorToApiError } from "@/modules/stripe/stripe-api-error";
 import {
   createStripeClientSecret,
@@ -58,6 +59,7 @@ import { RecordedTransaction } from "@/modules/transactions-recording/domain/rec
 import { type TransactionRecorderRepo } from "@/modules/transactions-recording/repositories/transaction-recorder-repo";
 
 import {
+  ParseError,
   parseTransactionInitializeSessionEventData,
   type TransactionInitializeSessionEventData,
   UnsupportedPaymentMethodError,
@@ -78,15 +80,18 @@ export class TransactionInitializeSessionUseCase {
   private appConfigRepo: AppConfigRepo;
   private stripePaymentIntentsApiFactory: IStripePaymentIntentsApiFactory;
   private transactionRecorder: TransactionRecorderRepo;
+  private storedPaymentMethods?: Pick<StoredPaymentMethodsService, "resolveForPayment">;
 
   constructor(deps: {
     appConfigRepo: AppConfigRepo;
     stripePaymentIntentsApiFactory: IStripePaymentIntentsApiFactory;
     transactionRecorder: TransactionRecorderRepo;
+    storedPaymentMethods?: Pick<StoredPaymentMethodsService, "resolveForPayment">;
   }) {
     this.appConfigRepo = deps.appConfigRepo;
     this.stripePaymentIntentsApiFactory = deps.stripePaymentIntentsApiFactory;
     this.transactionRecorder = deps.transactionRecorder;
+    this.storedPaymentMethods = deps.storedPaymentMethods;
   }
 
   private prepareStripeCreatePaymentIntentParams(args: {
@@ -272,6 +277,46 @@ export class TransactionInitializeSessionUseCase {
           stripePaymentIntentParamsResult.error,
         ),
       );
+    }
+
+    const intentData = eventDataResult.value.paymentIntent;
+
+    if (intentData.paymentMethod === "card" && intentData.storedPaymentMethodId) {
+      try {
+        /*
+         * Only the signed webhook's source user is an ownership authority.
+         * Client data may choose a method, never a Stripe customer or Saleor user.
+         */
+        if (!event.sourceObject.user?.id) throw new Error("Authenticated customer required");
+        const stored = await (
+          this.storedPaymentMethods ?? new StoredPaymentMethodsService(this.appConfigRepo)
+        ).resolveForPayment({
+          saleorApiUrl,
+          appId,
+          channelId: event.sourceObject.channel.id,
+          user: event.sourceObject.user,
+          paymentMethodId: intentData.storedPaymentMethodId,
+        });
+
+        stripePaymentIntentParamsResult.value.intentParams = {
+          ...stripePaymentIntentParamsResult.value.intentParams,
+          customer: stored.customer,
+          payment_method: stored.paymentMethod,
+        };
+      } catch {
+        return ok(
+          new TransactionInitializeSessionUseCaseResponses.Failure({
+            transactionResult: this.resolveErrorTransactionResult(resolvedTransactionFlow),
+            error: new ParseError("Saved payment method is unavailable", {
+              props: {
+                publicMessage:
+                  "This saved card is unavailable. Please choose another payment method.",
+              },
+            }),
+            appContext: appContextContainer.getContextValue(),
+          }),
+        );
+      }
     }
 
     const createPaymentIntentResult = await stripePaymentIntentsApi.createPaymentIntent(

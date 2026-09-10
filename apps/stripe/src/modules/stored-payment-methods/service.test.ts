@@ -80,6 +80,50 @@ describe("StoredPaymentMethodsService", () => {
     });
   });
 
+  it("resolves an owned saved card to the mapped Stripe customer without creating a customer", async () => {
+    vi.spyOn(customerRepo, "get").mockResolvedValue("cus_123");
+    stripe.paymentMethods.retrieve.mockResolvedValue({
+      id: "pm_owned",
+      type: "card",
+      card: { last4: "4242" },
+      customer: "cus_123",
+    });
+    const service = new StoredPaymentMethodsService(mockedAppConfigRepo, customerRepo);
+
+    await expect(
+      service.resolveForPayment({ ...context, paymentMethodId: "pm_owned" }),
+    ).resolves.toStrictEqual({ customer: "cus_123", paymentMethod: "pm_owned" });
+    expect(stripe.customers.create).not.toHaveBeenCalled();
+  });
+
+  it.each([null, "cus_other", { id: "cus_other" }])(
+    "rejects a detached or foreign saved card",
+    async (customer) => {
+      vi.spyOn(customerRepo, "get").mockResolvedValue("cus_123");
+      stripe.paymentMethods.retrieve.mockResolvedValue({
+        id: "pm_other",
+        type: "card",
+        card: { last4: "4242" },
+        customer,
+      });
+      const service = new StoredPaymentMethodsService(mockedAppConfigRepo, customerRepo);
+
+      await expect(
+        service.resolveForPayment({ ...context, paymentMethodId: "pm_other" }),
+      ).rejects.toThrow("Saved payment method is unavailable");
+    },
+  );
+
+  it("rejects a customer without a saved-payment mapping", async () => {
+    vi.spyOn(customerRepo, "get").mockResolvedValue(null);
+    const service = new StoredPaymentMethodsService(mockedAppConfigRepo, customerRepo);
+
+    await expect(
+      service.resolveForPayment({ ...context, paymentMethodId: "pm_owned" }),
+    ).rejects.toThrow("Saved payment method is unavailable");
+    expect(stripe.paymentMethods.retrieve).not.toHaveBeenCalled();
+  });
+
   it("refuses to detach a payment method owned by another Stripe customer", async () => {
     vi.spyOn(customerRepo, "get").mockResolvedValue("cus_123");
     stripe.paymentMethods.retrieve.mockResolvedValue({ id: "pm_other", customer: "cus_other" });

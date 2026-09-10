@@ -132,6 +132,22 @@ export class StoredPaymentMethodsService {
     };
   }
 
+  /** Resolve only a method attached to the signed Saleor source object's customer. */
+  async resolveForPayment(context: Context & { paymentMethodId: string }) {
+    const { stripe, access } = await this.resolve(context);
+    const customer = await this.customerRepo.get(access, context.user.id);
+
+    if (!customer) throw new Error("Saved payment method is unavailable");
+    const method = await stripe.paymentMethods.retrieve(context.paymentMethodId);
+    const owner = typeof method.customer === "string" ? method.customer : method.customer?.id;
+
+    if (owner !== customer || method.type !== "card" || !method.card) {
+      throw new Error("Saved payment method is unavailable");
+    }
+
+    return { customer, paymentMethod: method.id };
+  }
+
   async remove(context: Context & { paymentMethodId: string }) {
     const { stripe, access } = await this.resolve(context);
     const customerId = await this.customerRepo.get(access, context.user.id);
