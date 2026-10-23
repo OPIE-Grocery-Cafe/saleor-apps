@@ -76,9 +76,11 @@ const runMigrations = async () => {
           const targetUrl = appDetails.appUrl;
 
           if (!targetUrl?.length) {
-            logger.error("App has no defined appUrl, skipping");
-
-            return [];
+            /*
+             * Skip the installation. An empty list would not skip it: the runner removes every
+             * installed webhook the list does not name.
+             */
+            throw new Error("App has no defined appUrl, skipping its webhooks");
           }
 
           const baseUrl = new URL(targetUrl).origin;

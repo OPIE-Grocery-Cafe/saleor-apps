@@ -106,35 +106,51 @@ export class StoredPaymentMethodsService {
         ? setupIntent.payment_method
         : setupIntent.payment_method.id;
 
-    await this.detachEarlierCopies(stripe, customerId, paymentMethodId);
+    if ((await this.detachEarlierCopies(stripe, customerId, paymentMethodId)) === "replaced") {
+      return { result: "FAILED_TO_TOKENIZE", error: "A newer copy of this card was saved" };
+    }
 
     return { id: paymentMethodId, result: "SUCCESSFULLY_TOKENIZED" };
   }
 
   /**
-   * Saving a card the customer has already saved leaves one copy of it: the new one, which Stripe has
-   * just verified. Earlier copies (same card number, Stripe's `card.fingerprint`) are detached, so the
-   * customer's list never shows the same card twice. Best effort: the new card is saved either way, so
-   * a failure here is logged and the earlier copy stays.
+   * Saving a card the customer has already saved leaves one copy of it: the newest, which Stripe has
+   * just verified. Copies of the same card number (Stripe's `card.fingerprint`) created before it are
+   * detached, so the customer's list never shows the same card twice; only earlier copies, so two
+   * saves of one card at once keep the later one instead of detaching each other. Answers
+   * `replaced` when the card is no longer attached (a newer copy took its place), and `unknown` when
+   * the cards can't be read: best effort, the card is saved either way and the failure is logged.
    */
-  private async detachEarlierCopies(stripe: Stripe, customerId: string, paymentMethodId: string) {
+  private async detachEarlierCopies(
+    stripe: Stripe,
+    customerId: string,
+    paymentMethodId: string,
+  ): Promise<"kept" | "replaced" | "unknown"> {
     try {
       const methods = await stripe.paymentMethods.list({
         customer: customerId,
         type: "card",
         limit: 100,
       });
-      const fingerprint = methods.data.find((method) => method.id === paymentMethodId)?.card
-        ?.fingerprint;
+      const kept = methods.data.find((method) => method.id === paymentMethodId);
 
-      if (!fingerprint) return;
+      if (!kept) return "replaced";
+      const fingerprint = kept.card?.fingerprint;
+      const earlier = (method: Stripe.PaymentMethod) =>
+        method.created < kept.created || (method.created === kept.created && method.id < kept.id);
+
+      if (!fingerprint) return "kept";
       for (const method of methods.data) {
-        if (method.id !== paymentMethodId && method.card?.fingerprint === fingerprint) {
+        if (method.card?.fingerprint === fingerprint && earlier(method)) {
           await stripe.paymentMethods.detach(method.id);
         }
       }
+
+      return "kept";
     } catch (error) {
       this.logger.warn("Could not detach an earlier copy of a saved card", { error });
+
+      return "unknown";
     }
   }
 
@@ -171,13 +187,16 @@ export class StoredPaymentMethodsService {
     };
   }
 
-  /** Resolve only a method attached to the signed Saleor source object's customer. */
+  /**
+   * Resolve only a card attached to the signed Saleor source object's customer. Every refusal is a
+   * `StoredPaymentMethodUnavailableError` naming why; any other error is infrastructure.
+   */
   async resolveForPayment(context: Context & { paymentMethodId: string }) {
     const { stripe, access } = await this.resolve(context);
     const customer = await this.customerRepo.get(access, context.user.id);
 
     if (!customer)
-      throw new StoredPaymentMethodUnavailableError("Saved payment method is unavailable");
+      throw new StoredPaymentMethodUnavailableError("The customer has no Stripe customer");
     let method: Stripe.PaymentMethod;
 
     try {
@@ -189,15 +208,18 @@ export class StoredPaymentMethodsService {
         "code" in error &&
         error.code === "resource_missing"
       ) {
-        throw new StoredPaymentMethodUnavailableError("Saved payment method is unavailable");
+        throw new StoredPaymentMethodUnavailableError("Stripe has no such payment method");
       }
       throw error;
     }
     const owner = typeof method.customer === "string" ? method.customer : method.customer?.id;
 
-    if (owner !== customer || method.type !== "card" || !method.card) {
-      throw new StoredPaymentMethodUnavailableError("Saved payment method is unavailable");
-    }
+    if (owner !== customer)
+      throw new StoredPaymentMethodUnavailableError(
+        "The payment method isn't attached to the customer's Stripe customer",
+      );
+    if (method.type !== "card" || !method.card)
+      throw new StoredPaymentMethodUnavailableError("The payment method isn't a card");
 
     return { customer, paymentMethod: method.id };
   }

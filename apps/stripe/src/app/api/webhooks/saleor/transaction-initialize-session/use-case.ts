@@ -62,8 +62,8 @@ import { RecordedTransaction } from "@/modules/transactions-recording/domain/rec
 import { type TransactionRecorderRepo } from "@/modules/transactions-recording/repositories/transaction-recorder-repo";
 
 import {
-  ParseError,
   parseTransactionInitializeSessionEventData,
+  SavedCardUnavailableError,
   type TransactionInitializeSessionEventData,
   UnsupportedPaymentMethodError,
 } from "./event-data-parser";
@@ -286,19 +286,34 @@ export class TransactionInitializeSessionUseCase {
 
     if (intentData.paymentMethod === "card" && intentData.storedPaymentMethodId) {
       try {
+        const source = event.sourceObject;
+
         /*
-         * Only the signed webhook's source user is an ownership authority.
-         * Client data may choose a method, never a Stripe customer or Saleor user.
+         * Only the signed webhook's source user is an ownership authority, and only a checkout's:
+         * Saleor lets any caller start a payment for an order by its ID, and saved cards pay only at
+         * checkout. Client data may choose a method, never a Stripe customer or Saleor user.
          */
-        if (!event.sourceObject.user?.id)
-          throw new StoredPaymentMethodUnavailableError("Authenticated customer required");
+        if (source.__typename !== "Checkout")
+          throw new StoredPaymentMethodUnavailableError("Saved cards pay only for a checkout");
+        if (source.user === undefined) {
+          // Saleor still has the subscription from before it asked for the payer.
+          const outdated = new BaseError(
+            "The TransactionInitializeSession subscription has no sourceObject.user: run the webhook migration",
+          );
+
+          captureException(outdated);
+          this.logger.error(outdated.message);
+          throw new StoredPaymentMethodUnavailableError("The webhook subscription has no payer");
+        }
+        if (!source.user)
+          throw new StoredPaymentMethodUnavailableError("A guest checkout can't use a saved card");
         const stored = await (
           this.storedPaymentMethods ?? new StoredPaymentMethodsService(this.appConfigRepo)
         ).resolveForPayment({
           saleorApiUrl,
           appId,
-          channelId: event.sourceObject.channel.id,
-          user: event.sourceObject.user,
+          channelId: source.channel.id,
+          user: source.user,
           paymentMethodId: intentData.storedPaymentMethodId,
         });
 
@@ -320,13 +335,17 @@ export class TransactionInitializeSessionUseCase {
           );
         }
 
+        this.logger.warn("Saved card refused", {
+          reason: error.message,
+          channelId: event.sourceObject.channel.id,
+        });
+
         return ok(
           new TransactionInitializeSessionUseCaseResponses.Failure({
             transactionResult: this.resolveErrorTransactionResult(resolvedTransactionFlow),
-            error: new ParseError("Saved payment method is unavailable", {
+            error: new SavedCardUnavailableError("Saved payment method is unavailable", {
               props: {
-                publicMessage:
-                  "This saved card is unavailable. Please choose another payment method.",
+                merchantMessage: `Payment intent not created - saved card refused: ${error.message}`,
               },
             }),
             appContext: appContextContainer.getContextValue(),

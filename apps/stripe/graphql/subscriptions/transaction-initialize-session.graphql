@@ -16,11 +16,6 @@ fragment TransactionInitializeSessionEvent on TransactionInitializeSession {
         id
       }
     }
-    ... on Order {
-      user {
-        id
-      }
-    }
   }
   idempotencyKey
 }
