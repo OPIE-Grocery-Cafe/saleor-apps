@@ -4,12 +4,7 @@ import { scrubSensitiveEventData } from "@saleor/sentry-utils/scrub-sensitive-ev
 import { WebhookMigrationRunner } from "@saleor/webhook-utils";
 import * as Sentry from "@sentry/nextjs";
 
-import { paymentGatewayInitializeSessionWebhookDefinition } from "@/app/api/webhooks/saleor/payment-gateway-initialize-session/webhook-definition";
-import { transactionCancelationRequestedWebhookDefinition } from "@/app/api/webhooks/saleor/transaction-cancelation-requested/webhook-definition";
-import { transactionChargeRequestedWebhookDefinition } from "@/app/api/webhooks/saleor/transaction-charge-requested/webhook-definition";
-import { transactionInitializeSessionWebhookDefinition } from "@/app/api/webhooks/saleor/transaction-initialize-session/webhook-definition";
-import { transactionProcessSessionWebhookDefinition } from "@/app/api/webhooks/saleor/transaction-process-session/webhook-definition";
-import { transactionRefundRequestedWebhookDefinition } from "@/app/api/webhooks/saleor/transaction-refund-requested/webhook-definition";
+import { appWebhookDefinitions } from "@/app/api/webhooks/saleor/app-webhook-definitions";
 import { env } from "@/lib/env";
 import { createInstrumentedGraphqlClient } from "@/lib/graphql-client";
 import { saleorApp } from "@/lib/saleor-app";
@@ -88,32 +83,11 @@ const runMigrations = async () => {
 
           const baseUrl = new URL(targetUrl).origin;
 
-          const appWebhooks = [
-            {
-              ...paymentGatewayInitializeSessionWebhookDefinition.getWebhookManifest(baseUrl),
-              isActive: enabled,
-            },
-            {
-              ...transactionInitializeSessionWebhookDefinition.getWebhookManifest(baseUrl),
-              isActive: enabled,
-            },
-            {
-              ...transactionProcessSessionWebhookDefinition.getWebhookManifest(baseUrl),
-              isActive: enabled,
-            },
-            {
-              ...transactionChargeRequestedWebhookDefinition.getWebhookManifest(baseUrl),
-              isActive: enabled,
-            },
-            {
-              ...transactionCancelationRequestedWebhookDefinition.getWebhookManifest(baseUrl),
-              isActive: enabled,
-            },
-            {
-              ...transactionRefundRequestedWebhookDefinition.getWebhookManifest(baseUrl),
-              isActive: enabled,
-            },
-          ];
+          // The whole list: the runner removes any installed webhook this does not name.
+          const appWebhooks = appWebhookDefinitions.map((definition) => ({
+            ...definition.getWebhookManifest(baseUrl),
+            isActive: enabled,
+          }));
 
           return appWebhooks;
         },
