@@ -155,4 +155,52 @@ describe("StoredPaymentMethodsService", () => {
       result: "SUCCESSFULLY_TOKENIZED",
     });
   });
+
+  it("keeps the newly saved card and detaches earlier copies of the same card", async () => {
+    vi.spyOn(customerRepo, "get").mockResolvedValue("cus_123");
+    stripe.setupIntents.retrieve.mockResolvedValue({
+      id: "seti_456",
+      customer: "cus_123",
+      status: "succeeded",
+      payment_method: "pm_new",
+    });
+    stripe.paymentMethods.list.mockResolvedValue({
+      data: [
+        { id: "pm_new", card: { fingerprint: "fp_visa", last4: "4242" } },
+        { id: "pm_other", card: { fingerprint: "fp_mastercard", last4: "4444" } },
+        { id: "pm_old", card: { fingerprint: "fp_visa", last4: "4242" } },
+      ],
+    });
+    stripe.paymentMethods.detach.mockReset().mockResolvedValue({ id: "pm_old" });
+    const service = new StoredPaymentMethodsService(mockedAppConfigRepo, customerRepo);
+
+    await expect(
+      service.processMethod({ ...context, setupIntentId: "seti_456" }),
+    ).resolves.toStrictEqual({ id: "pm_new", result: "SUCCESSFULLY_TOKENIZED" });
+    expect(stripe.paymentMethods.list).toHaveBeenCalledWith({
+      customer: "cus_123",
+      type: "card",
+      limit: 100,
+    });
+    expect(stripe.paymentMethods.detach).toHaveBeenCalledTimes(1);
+    expect(stripe.paymentMethods.detach).toHaveBeenCalledWith("pm_old");
+  });
+
+  it("still reports the saved card when the earlier copies cannot be cleaned up", async () => {
+    vi.spyOn(customerRepo, "get").mockResolvedValue("cus_123");
+    stripe.setupIntents.retrieve.mockResolvedValue({
+      id: "seti_789",
+      customer: "cus_123",
+      status: "succeeded",
+      payment_method: "pm_new",
+    });
+    stripe.paymentMethods.list.mockRejectedValueOnce(new Error("Stripe unavailable"));
+    stripe.paymentMethods.detach.mockReset();
+    const service = new StoredPaymentMethodsService(mockedAppConfigRepo, customerRepo);
+
+    await expect(
+      service.processMethod({ ...context, setupIntentId: "seti_789" }),
+    ).resolves.toStrictEqual({ id: "pm_new", result: "SUCCESSFULLY_TOKENIZED" });
+    expect(stripe.paymentMethods.detach).not.toHaveBeenCalled();
+  });
 });

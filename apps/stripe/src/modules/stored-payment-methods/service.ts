@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import type Stripe from "stripe";
 
 import { BaseError } from "@/lib/errors";
+import { createLogger } from "@/lib/logger";
 import { type StripeConfig } from "@/modules/app-config/domain/stripe-config";
 import { type AppConfigRepo } from "@/modules/app-config/repositories/app-config-repo";
 import { getStripePostgresPool } from "@/modules/postgres/postgres";
@@ -21,6 +22,7 @@ export const StoredPaymentMethodUnavailableError = BaseError.subclass(
 );
 
 export class StoredPaymentMethodsService {
+  private readonly logger = createLogger("StoredPaymentMethodsService");
   private readonly appConfigRepo: AppConfigRepo;
   private readonly customerRepo: StoredPaymentCustomerRepo;
 
@@ -104,7 +106,36 @@ export class StoredPaymentMethodsService {
         ? setupIntent.payment_method
         : setupIntent.payment_method.id;
 
+    await this.detachEarlierCopies(stripe, customerId, paymentMethodId);
+
     return { id: paymentMethodId, result: "SUCCESSFULLY_TOKENIZED" };
+  }
+
+  /**
+   * Saving a card the customer has already saved leaves one copy of it: the new one, which Stripe has
+   * just verified. Earlier copies (same card number, Stripe's `card.fingerprint`) are detached, so the
+   * customer's list never shows the same card twice. Best effort: the new card is saved either way, so
+   * a failure here is logged and the earlier copy stays.
+   */
+  private async detachEarlierCopies(stripe: Stripe, customerId: string, paymentMethodId: string) {
+    try {
+      const methods = await stripe.paymentMethods.list({
+        customer: customerId,
+        type: "card",
+        limit: 100,
+      });
+      const fingerprint = methods.data.find((method) => method.id === paymentMethodId)?.card
+        ?.fingerprint;
+
+      if (!fingerprint) return;
+      for (const method of methods.data) {
+        if (method.id !== paymentMethodId && method.card?.fingerprint === fingerprint) {
+          await stripe.paymentMethods.detach(method.id);
+        }
+      }
+    } catch (error) {
+      this.logger.warn("Could not detach an earlier copy of a saved card", { error });
+    }
   }
 
   async list(context: Context) {
