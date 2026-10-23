@@ -8,6 +8,39 @@ import {
 } from "./event-data-parser";
 
 describe("parseTransactionInitializeSessionEventData", () => {
+  it("accepts a saved card identifier while rejecting shopper-supplied customer ownership", () => {
+    expect(
+      parseTransactionInitializeSessionEventData({
+        paymentIntent: {
+          paymentMethod: "card",
+          storedPaymentMethodId: "pm_saved123",
+        },
+      })._unsafeUnwrap(),
+    ).toMatchObject({ paymentIntent: { storedPaymentMethodId: "pm_saved123" } });
+    expect(
+      parseTransactionInitializeSessionEventData({
+        paymentIntent: {
+          paymentMethod: "card",
+          storedPaymentMethodId: "pm_saved123",
+          customer: "cus_victim",
+        },
+      }).isErr(),
+    ).toBe(true);
+  });
+
+  it.each(["", "cus_123", "pm_", "pm_bad value"])(
+    "rejects invalid saved method %s",
+    (storedPaymentMethodId) => {
+      expect(
+        parseTransactionInitializeSessionEventData({
+          paymentIntent: {
+            paymentMethod: "card",
+            storedPaymentMethodId,
+          },
+        }).isErr(),
+      ).toBe(true);
+    },
+  );
   it("should parse valid data coming from storefront", () => {
     const storefrontData = {
       paymentIntent: {

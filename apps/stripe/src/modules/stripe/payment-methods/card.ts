@@ -15,6 +15,11 @@ export class CardPaymentMethod implements PaymentMethod {
   static TransactionInitializeSchema = z
     .object({
       paymentMethod: z.literal("card"),
+      storedPaymentMethodId: z
+        .string()
+        .regex(/^pm_[A-Za-z0-9]+$/)
+        .max(255)
+        .optional(),
     })
     .strict();
 
