@@ -181,6 +181,12 @@ describe("StoredPaymentMethodsService", () => {
       status: "succeeded",
       payment_method: "pm_123",
     });
+    stripe.paymentMethods.retrieve.mockResolvedValue({
+      id: "pm_123",
+      customer: "cus_123",
+      created: 100,
+      card: { fingerprint: "fp_visa" },
+    });
     stripe.paymentMethods.list.mockResolvedValue({
       data: [{ id: "pm_123", created: 100, card: { fingerprint: "fp_visa" } }],
     });
@@ -201,6 +207,12 @@ describe("StoredPaymentMethodsService", () => {
       customer: "cus_123",
       status: "succeeded",
       payment_method: "pm_new",
+    });
+    stripe.paymentMethods.retrieve.mockResolvedValue({
+      id: "pm_new",
+      customer: "cus_123",
+      created: 300,
+      card: { fingerprint: "fp_visa" },
     });
     stripe.paymentMethods.list.mockResolvedValue({
       data: [
@@ -232,6 +244,12 @@ describe("StoredPaymentMethodsService", () => {
       status: "succeeded",
       payment_method: "pm_first",
     });
+    stripe.paymentMethods.retrieve.mockResolvedValue({
+      id: "pm_first",
+      customer: "cus_123",
+      created: 100,
+      card: { fingerprint: "fp_visa" },
+    });
     // Another save of the same card finished in between: its copy is newer.
     stripe.paymentMethods.list.mockResolvedValue({
       data: [
@@ -247,14 +265,17 @@ describe("StoredPaymentMethodsService", () => {
     ).resolves.toStrictEqual({ id: "pm_first", result: "SUCCESSFULLY_TOKENIZED" });
     expect(stripe.paymentMethods.detach).not.toHaveBeenCalled();
     // Processed again after the newer save detached it.
-    stripe.paymentMethods.list.mockResolvedValue({
-      data: [{ id: "pm_second", created: 200, card: { fingerprint: "fp_visa" } }],
+    stripe.paymentMethods.retrieve.mockResolvedValue({
+      id: "pm_first",
+      customer: null,
+      created: 100,
+      card: { fingerprint: "fp_visa" },
     });
     await expect(
       service.processMethod({ ...context, setupIntentId: "seti_first" }),
     ).resolves.toStrictEqual({
       result: "FAILED_TO_TOKENIZE",
-      error: "A newer copy of this card was saved",
+      error: "This card is no longer saved",
     });
   });
 
@@ -265,6 +286,12 @@ describe("StoredPaymentMethodsService", () => {
       customer: "cus_123",
       status: "succeeded",
       payment_method: "pm_new",
+    });
+    stripe.paymentMethods.retrieve.mockResolvedValue({
+      id: "pm_new",
+      customer: "cus_123",
+      created: 300,
+      card: { fingerprint: "fp_visa" },
     });
     stripe.paymentMethods.list.mockRejectedValueOnce(new Error("Stripe unavailable"));
     stripe.paymentMethods.detach.mockReset();

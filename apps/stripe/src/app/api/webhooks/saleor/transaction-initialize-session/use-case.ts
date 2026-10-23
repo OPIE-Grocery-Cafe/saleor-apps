@@ -343,11 +343,8 @@ export class TransactionInitializeSessionUseCase {
         return ok(
           new TransactionInitializeSessionUseCaseResponses.Failure({
             transactionResult: this.resolveErrorTransactionResult(resolvedTransactionFlow),
-            error: new SavedCardUnavailableError("Saved payment method is unavailable", {
-              props: {
-                merchantMessage: `Payment intent not created - saved card refused: ${error.message}`,
-              },
-            }),
+            // The reason is in the log above: the response carries only the public message.
+            error: new SavedCardUnavailableError("Saved payment method is unavailable"),
             appContext: appContextContainer.getContextValue(),
           }),
         );

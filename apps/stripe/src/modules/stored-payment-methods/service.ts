@@ -106,8 +106,8 @@ export class StoredPaymentMethodsService {
         ? setupIntent.payment_method
         : setupIntent.payment_method.id;
 
-    if ((await this.detachEarlierCopies(stripe, customerId, paymentMethodId)) === "replaced") {
-      return { result: "FAILED_TO_TOKENIZE", error: "A newer copy of this card was saved" };
+    if ((await this.detachEarlierCopies(stripe, customerId, paymentMethodId)) === "gone") {
+      return { result: "FAILED_TO_TOKENIZE", error: "This card is no longer saved" };
     }
 
     return { id: paymentMethodId, result: "SUCCESSFULLY_TOKENIZED" };
@@ -117,29 +117,33 @@ export class StoredPaymentMethodsService {
    * Saving a card the customer has already saved leaves one copy of it: the newest, which Stripe has
    * just verified. Copies of the same card number (Stripe's `card.fingerprint`) created before it are
    * detached, so the customer's list never shows the same card twice; only earlier copies, so two
-   * saves of one card at once keep the later one instead of detaching each other. Answers
-   * `replaced` when the card is no longer attached (a newer copy took its place), and `unknown` when
-   * the cards can't be read: best effort, the card is saved either way and the failure is logged.
+   * saves of one card at once keep the later one instead of detaching each other. Answers `gone` when
+   * the card is no longer attached to the customer (a newer copy replaced it, or it was removed), and
+   * `unknown` when Stripe can't be read: best effort, the card is saved either way and the failure is
+   * logged.
    */
   private async detachEarlierCopies(
     stripe: Stripe,
     customerId: string,
     paymentMethodId: string,
-  ): Promise<"kept" | "replaced" | "unknown"> {
+  ): Promise<"kept" | "gone" | "unknown"> {
     try {
+      const saved = await stripe.paymentMethods.retrieve(paymentMethodId);
+      const owner = typeof saved.customer === "string" ? saved.customer : saved.customer?.id;
+
+      if (owner !== customerId) return "gone";
+      const fingerprint = saved.card?.fingerprint;
+
+      if (!fingerprint) return "kept";
       const methods = await stripe.paymentMethods.list({
         customer: customerId,
         type: "card",
         limit: 100,
       });
-      const kept = methods.data.find((method) => method.id === paymentMethodId);
-
-      if (!kept) return "replaced";
-      const fingerprint = kept.card?.fingerprint;
       const earlier = (method: Stripe.PaymentMethod) =>
-        method.created < kept.created || (method.created === kept.created && method.id < kept.id);
+        method.created < saved.created ||
+        (method.created === saved.created && method.id < saved.id);
 
-      if (!fingerprint) return "kept";
       for (const method of methods.data) {
         if (method.card?.fingerprint === fingerprint && earlier(method)) {
           await stripe.paymentMethods.detach(method.id);
