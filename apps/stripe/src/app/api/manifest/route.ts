@@ -7,19 +7,7 @@ import { env } from "@/lib/env";
 import { withLoggerContext } from "@/lib/logger-context";
 import packageJson from "@/package.json";
 
-import { paymentGatewayInitializeSessionWebhookDefinition } from "../webhooks/saleor/payment-gateway-initialize-session/webhook-definition";
-import {
-  listStoredPaymentMethodsDefinition,
-  paymentGatewayInitializeTokenizationDefinition,
-  paymentMethodInitializeTokenizationDefinition,
-  paymentMethodProcessTokenizationDefinition,
-  storedPaymentMethodDeleteRequestedDefinition,
-} from "../webhooks/saleor/stored-payment-methods/webhook-definitions";
-import { transactionCancelationRequestedWebhookDefinition } from "../webhooks/saleor/transaction-cancelation-requested/webhook-definition";
-import { transactionChargeRequestedWebhookDefinition } from "../webhooks/saleor/transaction-charge-requested/webhook-definition";
-import { transactionInitializeSessionWebhookDefinition } from "../webhooks/saleor/transaction-initialize-session/webhook-definition";
-import { transactionProcessSessionWebhookDefinition } from "../webhooks/saleor/transaction-process-session/webhook-definition";
-import { transactionRefundRequestedWebhookDefinition } from "../webhooks/saleor/transaction-refund-requested/webhook-definition";
+import { appWebhookDefinitions } from "../webhooks/saleor/app-webhook-definitions";
 
 const handler = createManifestHandler({
   async manifestFactory({ appBaseUrl }) {
@@ -49,19 +37,9 @@ const handler = createManifestHandler({
       supportUrl: "https://saleor.io/discord",
       tokenTargetUrl: `${apiBaseUrl}/api/register`,
       version: packageJson.version,
-      webhooks: [
-        paymentGatewayInitializeSessionWebhookDefinition.getWebhookManifest(apiBaseUrl),
-        transactionInitializeSessionWebhookDefinition.getWebhookManifest(apiBaseUrl),
-        transactionProcessSessionWebhookDefinition.getWebhookManifest(apiBaseUrl),
-        transactionChargeRequestedWebhookDefinition.getWebhookManifest(apiBaseUrl),
-        transactionCancelationRequestedWebhookDefinition.getWebhookManifest(apiBaseUrl),
-        transactionRefundRequestedWebhookDefinition.getWebhookManifest(apiBaseUrl),
-        paymentGatewayInitializeTokenizationDefinition.getWebhookManifest(apiBaseUrl),
-        paymentMethodInitializeTokenizationDefinition.getWebhookManifest(apiBaseUrl),
-        paymentMethodProcessTokenizationDefinition.getWebhookManifest(apiBaseUrl),
-        listStoredPaymentMethodsDefinition.getWebhookManifest(apiBaseUrl),
-        storedPaymentMethodDeleteRequestedDefinition.getWebhookManifest(apiBaseUrl),
-      ],
+      webhooks: appWebhookDefinitions.map((definition) =>
+        definition.getWebhookManifest(apiBaseUrl),
+      ),
     };
 
     return manifest;

@@ -26,6 +26,10 @@ import {
   type SaleorTransationFlow,
 } from "@/modules/saleor/saleor-transaction-flow";
 import { createSaleorTransactionId } from "@/modules/saleor/saleor-transaction-id";
+import {
+  StoredPaymentMethodsService,
+  StoredPaymentMethodUnavailableError,
+} from "@/modules/stored-payment-methods/service";
 import { mapStripeErrorToApiError } from "@/modules/stripe/stripe-api-error";
 import {
   createStripeClientSecret,
@@ -59,6 +63,7 @@ import { type TransactionRecorderRepo } from "@/modules/transactions-recording/r
 
 import {
   parseTransactionInitializeSessionEventData,
+  SavedCardUnavailableError,
   type TransactionInitializeSessionEventData,
   UnsupportedPaymentMethodError,
 } from "./event-data-parser";
@@ -78,15 +83,18 @@ export class TransactionInitializeSessionUseCase {
   private appConfigRepo: AppConfigRepo;
   private stripePaymentIntentsApiFactory: IStripePaymentIntentsApiFactory;
   private transactionRecorder: TransactionRecorderRepo;
+  private storedPaymentMethods?: Pick<StoredPaymentMethodsService, "resolveForPayment">;
 
   constructor(deps: {
     appConfigRepo: AppConfigRepo;
     stripePaymentIntentsApiFactory: IStripePaymentIntentsApiFactory;
     transactionRecorder: TransactionRecorderRepo;
+    storedPaymentMethods?: Pick<StoredPaymentMethodsService, "resolveForPayment">;
   }) {
     this.appConfigRepo = deps.appConfigRepo;
     this.stripePaymentIntentsApiFactory = deps.stripePaymentIntentsApiFactory;
     this.transactionRecorder = deps.transactionRecorder;
+    this.storedPaymentMethods = deps.storedPaymentMethods;
   }
 
   private prepareStripeCreatePaymentIntentParams(args: {
@@ -272,6 +280,75 @@ export class TransactionInitializeSessionUseCase {
           stripePaymentIntentParamsResult.error,
         ),
       );
+    }
+
+    const intentData = eventDataResult.value.paymentIntent;
+
+    if (intentData.paymentMethod === "card" && intentData.storedPaymentMethodId) {
+      try {
+        const source = event.sourceObject;
+
+        /*
+         * Only the signed webhook's source user is an ownership authority, and only a checkout's:
+         * Saleor lets any caller start a payment for an order by its ID, and saved cards pay only at
+         * checkout. Client data may choose a method, never a Stripe customer or Saleor user.
+         */
+        if (source.__typename !== "Checkout")
+          throw new StoredPaymentMethodUnavailableError("Saved cards pay only for a checkout");
+        if (source.user === undefined) {
+          // Saleor still has the subscription from before it asked for the payer.
+          const outdated = new BaseError(
+            "The TransactionInitializeSession subscription has no sourceObject.user: run the webhook migration",
+          );
+
+          captureException(outdated);
+          this.logger.error(outdated.message);
+          throw new StoredPaymentMethodUnavailableError("The webhook subscription has no payer");
+        }
+        if (!source.user)
+          throw new StoredPaymentMethodUnavailableError("A guest checkout can't use a saved card");
+        const stored = await (
+          this.storedPaymentMethods ?? new StoredPaymentMethodsService(this.appConfigRepo)
+        ).resolveForPayment({
+          saleorApiUrl,
+          appId,
+          channelId: source.channel.id,
+          user: source.user,
+          paymentMethodId: intentData.storedPaymentMethodId,
+        });
+
+        stripePaymentIntentParamsResult.value.intentParams = {
+          ...stripePaymentIntentParamsResult.value.intentParams,
+          customer: stored.customer,
+          payment_method: stored.paymentMethod,
+        };
+      } catch (error) {
+        if (!(error instanceof StoredPaymentMethodUnavailableError)) {
+          captureException(error);
+          this.logger.error("Saved payment method lookup failed", { error });
+
+          return err(
+            new BrokenAppResponse(
+              appContextContainer.getContextValue(),
+              BaseError.normalize(error),
+            ),
+          );
+        }
+
+        this.logger.warn("Saved card refused", {
+          reason: error.message,
+          channelId: event.sourceObject.channel.id,
+        });
+
+        return ok(
+          new TransactionInitializeSessionUseCaseResponses.Failure({
+            transactionResult: this.resolveErrorTransactionResult(resolvedTransactionFlow),
+            // The reason is in the log above: the response carries only the public message.
+            error: new SavedCardUnavailableError("Saved payment method is unavailable"),
+            appContext: appContextContainer.getContextValue(),
+          }),
+        );
+      }
     }
 
     const createPaymentIntentResult = await stripePaymentIntentsApi.createPaymentIntent(

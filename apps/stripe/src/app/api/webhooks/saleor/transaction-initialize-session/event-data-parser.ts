@@ -39,6 +39,21 @@ export const UnsupportedPaymentMethodError = ParseError.subclass("UnsupportedPay
   },
 });
 
+export const SavedCardUnavailableErrorPublicCode = "StoredPaymentMethodUnavailableError" as const;
+
+/**
+ * The saved card can't pay for this checkout: not the checkout customer's, gone from Stripe, or the
+ * checkout has no customer. A code of its own, so a storefront can tell it from a temporary Stripe error.
+ */
+export const SavedCardUnavailableError = ParseError.subclass("SavedCardUnavailableError", {
+  props: {
+    _internalName: "TransactionInitializeEventDataSavedCardUnavailableError" as const,
+    publicCode: SavedCardUnavailableErrorPublicCode,
+    publicMessage: "This saved card is unavailable. Please choose another payment method.",
+    merchantMessage: "Payment intent not created - the saved card can't pay for this checkout",
+  },
+});
+
 export const parseTransactionInitializeSessionEventData = (raw: unknown) => {
   const parsingResult = TransactionInitializeEventDataSchema.safeParse(raw);
 
@@ -83,4 +98,5 @@ export type TransactionInitializeSessionEventData = z.infer<
 
 export type TransactionInitializeSessionEventDataError =
   | InstanceType<typeof ParseError>
-  | InstanceType<typeof UnsupportedPaymentMethodError>;
+  | InstanceType<typeof UnsupportedPaymentMethodError>
+  | InstanceType<typeof SavedCardUnavailableError>;

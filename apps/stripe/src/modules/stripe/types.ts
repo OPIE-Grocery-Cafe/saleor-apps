@@ -45,6 +45,8 @@ export interface CreatePaymentIntentArgs {
     | "payment_method_options"
     | "confirm"
     | "payment_method"
+    | "customer"
+    | "capture_method"
     | "return_url"
   >;
   idempotencyKey: string;

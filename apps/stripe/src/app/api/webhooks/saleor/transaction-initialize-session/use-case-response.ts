@@ -34,6 +34,7 @@ import {
 
 import {
   ParseErrorPublicCode,
+  SavedCardUnavailableErrorPublicCode,
   type TransactionInitializeSessionEventDataError,
   UnsupportedPaymentMethodErrorPublicCode,
 } from "./event-data-parser";
@@ -100,6 +101,7 @@ class Failure extends SuccessWebhookResponse {
         code: z.union([
           z.literal(ParseErrorPublicCode),
           z.literal(UnsupportedPaymentMethodErrorPublicCode),
+          z.literal(SavedCardUnavailableErrorPublicCode),
           z.literal(StripeCardErrorPublicCode),
           z.literal(StripeApiErrorPublicCode),
         ]),
